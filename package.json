@@ -1,0 +1,49 @@
+{
+  "name": "@zhinjs/plugins",
+  "version": "0.0.1",
+  "description": "知音官方插件仓库",
+  "scripts": {
+    "compile": "ts-node ./build/compile.ts",
+    "dtsc": "ts-node ./build/dtsc.ts",
+    "build": "npm run compile && npm run dtsc",
+    "pub": "ts-node ./build/publish.ts",
+    "dev": "npm run dev -w test"
+  },
+  "workspaces": [
+    "packages/*",
+    "test"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhinjs/plugins.git"
+  },
+  "keywords": [
+    "zhin",
+    "知音",
+    "plugins",
+    "plugin",
+    "插件"
+  ],
+  "author": "凉菜",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zhinjs/plugins/issues"
+  },
+  "homepage": "https://github.com/zhinjs/plugins#readme",
+  "devDependencies": {
+    "@types/node": "^18.7.2",
+    "cac": "^6.7.12",
+    "cross-spawn": "^7.0.3",
+    "dtsc": "^2.2.3",
+    "esbuild": "^0.15.1",
+    "fs-extra": "^10.1.0",
+    "json5": "^2.2.1",
+    "kleur": "^4.1.5",
+    "semver": "^7.3.7",
+    "typescript": "^4.7.4",
+    "zhin": "^1.1.37"
+  },
+  "dependencies": {
+    "latest-version": "^5.1.0"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@zhinjs/plugin-github",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "version": "0.0.8",
+  "description": "github service",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhinjs/plugins.git",
+    "directory": "plugins/github"
+  },
+  "keywords": [
+    "gihub",
+    "service",
+    "zhin"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/LICENSE"
+  ],
+  "author": "凉菜 <admin@liucl.cn>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhinjs/plugins/issues"
+  },
+  "homepage": "https://github.com/zhinjs/plugins#readme",
+  "dependencies": {
+    "@octokit/webhooks": "^10.1.5",
+    "marked": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/marked": "^4.0.7"
+  }
+}

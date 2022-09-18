@@ -1,0 +1,22 @@
+@use 'sass:color';
+:root {
+  .el-tabs__nav-wrap{
+    &::after{
+      display: none;
+    }
+    box-shadow: var(--shadow-bottom);
+    &.is-left{
+      box-shadow: var(--shadow-right);
+    }
+    &.is-right{
+      box-shadow: var(--shadow-left);
+    }
+  }
+}
+
+html.dark {
+  --el-bg-color: #202225;
+  --el-menu-bg-color: #2f3034;
+  --el-fill-color-blank:var(--el-menu-bg-color);
+}
+

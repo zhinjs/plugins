@@ -1,0 +1,33 @@
+{
+  "name": "@zhinjs/plugin-utils",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "version": "0.0.3",
+  "description": "utils plugin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhinjs/plugins.git",
+    "directory": "plugins/utils"
+  },
+  "keywords": [
+    "utils",
+    "plugin",
+    "zhin"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/LICENSE"
+  ],
+  "author": "凉菜 <admin@liucl.cn>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhinjs/plugins/issues"
+  },
+  "homepage": "https://github.com/zhinjs/plugins#readme",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "moment": "^2.29.4",
+    "proxy-agent": "^5.0.0"
+  }
+}

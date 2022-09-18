@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@zhinjs/plugin-*": [
+        "packages/*/src",
+        "packages/**/*/src"
+      ]
+    }
+  }
+}

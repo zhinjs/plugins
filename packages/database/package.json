@@ -1,0 +1,31 @@
+{
+  "name": "@zhinjs/plugin-database",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "version": "0.0.7",
+  "description": "database service",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhinjs/plugins.git",
+    "directory": "plugins/database"
+  },
+  "keywords": [
+    "database",
+    "service",
+    "zhin"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/LICENSE"
+  ],
+  "author": "凉菜 <admin@liucl.cn>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhinjs/plugins/issues"
+  },
+  "homepage": "https://github.com/zhinjs/plugins#readme",
+  "dependencies": {
+    "sequelize": "^6.21.3"
+  }
+}
