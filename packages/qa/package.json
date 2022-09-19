@@ -1,16 +1,16 @@
 {
-  "name": "@zhinjs/plugin-task",
+  "name": "@zhinjs/plugin-qa",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.5",
+  "version": "0.0.2",
   "description": "task plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/task"
+    "directory": "plugins/qa"
   },
   "keywords": [
-    "task",
+    "qa",
     "plugin",
     "zhin"
   ],

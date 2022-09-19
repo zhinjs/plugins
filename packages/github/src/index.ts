@@ -237,7 +237,7 @@ export function install(bot:Bot,config:Config){
 
             return request('PUT', `/user/starred/${options.repo}`, event, null, '操作')
         })
-    bot.on('ready', async () => {
+    bot.after('ready', async () => {
         const channels = await bot.database.get('Group')
         for (const channel of channels) {
             const { github_webhooks,group_id }=channel.toJSON()

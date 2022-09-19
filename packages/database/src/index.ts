@@ -35,21 +35,7 @@ declare module 'icqq'{
 }
 export const name='database'
 export async function install(this:Plugin,bot:Bot,options:Options){
-    // 传入服务构造函数和服务配置，系统将自动实例化该服务
-    // 优点，减少代码书写
-    // 缺点，在安装时无法添加卸载函数
     bot.service('database',Database,options)
-    // 直接传入实例化后的服务
-    // 优点，你可以自由控制添加的服务
-    // 缺点，增加了书写量
-    bot.service('database',new Database(bot,options))
-    // 获取服务的方法
-    bot.service('database')
-    bot.on('ready',()=>bot.database.connect())
-    if (bot.isReady){
-        await bot.database.init()
-        bot.database.connect()
-    }
     this.disposes.push(()=>{
         bot.database.disconnect()
         delete bot.database
@@ -64,8 +50,14 @@ export class Database {
         this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
         this.define('User', UserTable.model)
         this.define('Group', GroupTable.model)
-        this.bot.before('ready', async () => {
-            await this.init()
+        this.bot.before('ready',()=>{
+            Object.entries(this.modelDecl).forEach(([name, decl]) => {
+                this.sequelize.define(name, decl,{timestamps:false})
+            })
+        })
+        this.bot.after('ready',async ()=>{
+            await this.sequelize.sync({alter: true})
+            this.connect()
         })
     }
 
@@ -87,27 +79,6 @@ export class Database {
     }
     delete(modelName:string,condition:Dict){
         return this.model(modelName).destroy({where:condition})
-    }
-    getMethods(modelName:string){
-        const model=this.model(modelName)
-        return {
-            $update(){
-                const {id,...others}=this
-                return model.update({...others},{where:id})
-            },
-            $findAll(condition:Partial<Exclude<typeof this, '$update'|'$findAll'|'$findOne'>>){
-                return model.findAll({where:condition})
-            },
-            $findOne(condition:Partial<typeof this>){
-                return model.findOne({where:condition})
-            }
-        }
-    }
-    async init(){
-        Object.entries(this.modelDecl).forEach(([name, decl]) => {
-            this.sequelize.define(name, decl,{timestamps:false})
-        })
-        await this.sequelize.sync({alter: true})
     }
     connect() {
         this.bot.before('message', async (message) => {

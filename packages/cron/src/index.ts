@@ -63,7 +63,7 @@ export function install(bot: Bot, config: Config={}) {
         }, timeout)
     }
 
-    bot.after('database.ready', async () => {
+    bot.after('ready', async () => {
         const crons = await bot.database.get('cron',{assignee:bot.uin})
         crons.forEach((cron) => {
             const schedule=cron.toJSON()

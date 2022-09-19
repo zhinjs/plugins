@@ -25,7 +25,7 @@ export interface Pagination {
     pageSize: number
     pageNum: number
 }
-export const using=['database','cron']
+export const using=['database']
 export function install(bot:Bot){
     const taskService=new Tasks(bot)
     bot.service('tasks',taskService)
@@ -46,7 +46,7 @@ export function install(bot:Bot){
             const condition: Partial<Task> = {},
                 pagination: Pagination = {pageNum: options.pageNum || 1, pageSize: 15}
             if (options.search) condition.name = options.search
-            const result = await this.query(condition, pagination)
+            const result = await taskService.query(condition, pagination)
             return template('task.list', result.map(task => template('task.info', task.id, task.name, task.desc)).join('\n'))
         })
     bot.command('task/task.add')
@@ -54,7 +54,7 @@ export function install(bot:Bot){
         .shortcut('新增任务')
         .auth(4)
         .action(async ({event}, name) => {
-            const result = await this.modifyTask(event)
+            const result = await taskService.modifyTask(event)
             if (typeof result === 'string') return result
             return `添加任务(${result.id})成功`
         })
@@ -63,7 +63,7 @@ export function install(bot:Bot){
         .shortcut('编辑任务')
         .auth(4)
         .action(async ({event}, id) => {
-            const result = await this.modifyTask( event, id)
+            const result = await taskService.modifyTask( event, id)
             if (typeof result === 'string') return result
             return `编辑任务(${result.id})成功`
         })
@@ -72,7 +72,7 @@ export function install(bot:Bot){
         .shortcut(/^查看任务(\d+)/, {args: ['$1']})
         .auth(4)
         .action(async ({event}, id) => {
-            const task = await this.detail(id)
+            const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
             return template('task.info', task.id, task.name, task.desc) + template('task.steps', (task.steps || []).map(step => {
                 return template('task.step', step.index, step.template)
@@ -83,24 +83,24 @@ export function install(bot:Bot){
         .shortcut(/^执行任务(\d+)/, {args: ['$1']})
         .auth(4)
         .action(async ({event}, id) => {
-            const task = await this.detail(id)
+            const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
             await event.reply(`正在执行任务${id}...`)
             for (const step of task.steps) {
                 try {
-                    await bot.execute({
+                    const result=await bot.execute({
                         event,
                         name:'exec',
                         args:[step.template]
                     })
+                    if(result && typeof result!=='boolean') await event.reply(result)
                 } catch (e) {
                     return e.message
                 }
             }
             return `任务执行完成`
         })
-
-    bot.before('ready',()=>{
+    bot.once('ready',()=>{
         const {Task, TaskStep} = bot.database.models
         Task.hasMany(TaskStep, {as: 'steps'})
         TaskStep.belongsTo(Task)

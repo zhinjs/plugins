@@ -166,7 +166,7 @@ export function github(bot: Bot) {
         if (!match) return
         const [, owner, repo] = match
         const url = `https://opengraph.github.com/repo/${owner}/${repo}`
-        return segment.image(url)
+        event.reply(segment.image(url))
     })
 }
 
@@ -253,7 +253,8 @@ export function install(bot: Bot, config: Config={}) {
         while (template.match(/\$\(.*\)/)) {
             const text = /\$\((.*)\)/.exec(template)[1];
             const executeResult = await executeTemplate.call(this,text);
-            if (typeof executeResult === 'string') {
+            console.log('exec',text,executeResult);
+            if (executeResult && typeof executeResult!=='boolean') {
                 template = template.replace(/\$\((.*)\)/, executeResult);
             }
         }
