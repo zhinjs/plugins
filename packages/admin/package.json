@@ -1,16 +1,16 @@
 {
-  "name": "@zhinjs/plugin-utils",
+  "name": "@zhinjs/plugin-admin",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.6",
-  "description": "utils plugin",
+  "version": "0.0.1",
+  "description": "知音管理插件",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/utils"
+    "directory": "plugins/admin"
   },
   "keywords": [
-    "utils",
+    "admin",
     "plugin",
     "zhin"
   ],
@@ -26,8 +26,7 @@
   },
   "homepage": "https://github.com/zhinjs/plugins#readme",
   "dependencies": {
-    "axios": "^0.27.2",
-    "moment": "^2.29.4",
-    "proxy-agent": "^5.0.0"
+  },
+  "devDependencies": {
   }
 }

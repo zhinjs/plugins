@@ -36,7 +36,6 @@ export function install(bot:Bot){
         .option('search', '-s <keyword:string> 搜索指定名称的任务')
         .option('remove', '-r 移除指定任务')
         .shortcut(/^删除任务(\d+)$/, {options: {remove: true}, args: ['$1']})
-        .auth(4)
         .action(async ({options, event}, id) => {
             if (options.remove) {
                 if (!id) return '未指定任务id'
@@ -52,7 +51,6 @@ export function install(bot:Bot){
     bot.command('task/task.add')
         .desc('新增任务')
         .shortcut('新增任务')
-        .auth(4)
         .action(async ({event}, name) => {
             const result = await taskService.modifyTask(event)
             if (typeof result === 'string') return result
@@ -61,7 +59,7 @@ export function install(bot:Bot){
     bot.command('task/task.edit [id:integer]')
         .desc('编辑任务')
         .shortcut('编辑任务')
-        .auth(4)
+        .auth("admins")
         .action(async ({event}, id) => {
             const result = await taskService.modifyTask( event, id)
             if (typeof result === 'string') return result
@@ -70,7 +68,7 @@ export function install(bot:Bot){
     bot.command('task/task.info [id:integer]')
         .desc('查看任务详情')
         .shortcut(/^查看任务(\d+)/, {args: ['$1']})
-        .auth(4)
+        .auth('admins')
         .action(async ({event}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
@@ -81,7 +79,7 @@ export function install(bot:Bot){
     bot.command('task/task.run [id:integer]')
         .desc('执行指定任务')
         .shortcut(/^执行任务(\d+)/, {args: ['$1']})
-        .auth(4)
+        .auth("admins")
         .action(async ({event}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`

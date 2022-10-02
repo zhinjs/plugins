@@ -18,7 +18,6 @@ interface OneBotProtocol {
 }
 
 
-const clone = rfdc()
 
 class NotFoundError extends Error {
     message='不支持的API'
@@ -110,7 +109,7 @@ export class OneBot {
         let unserialized: any = data
         switch (data.post_type) {
             case "message":
-                unserialized = clone(unserialized)
+                unserialized = data.toJSON('bot','oneBot','prompt')
                 if (this.config.post_message_format === "string") {
                     unserialized.message = toCqcode(data)
                 } else {
@@ -119,7 +118,7 @@ export class OneBot {
                 break
             case "notice":
                 if (this.config.use_cqhttp_notice) {
-                    unserialized = clone(unserialized)
+                    unserialized = data.toJSON('bot','oneBot','prompt')
                     transNotice(unserialized)
                 }
                 break

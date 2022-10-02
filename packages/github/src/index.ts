@@ -38,7 +38,61 @@ export function install(bot:Bot,config:Config){
         },{where:{id}})
         return _ctx.status = 200
     })
-    bot.command('github.authorize <user>','group')
+    bot.command('github [name]',"group")
+        .alias('gh')
+        .check(({event})=>{
+            if(bot.isAdmin(event.sender.user_id) || bot.isMaster(event.sender.user_id))return
+            return '权限不足'
+        })
+        .option('list', '-l')
+        .option('add', '-a')
+        .option('delete', '-d')
+        .action(async ({ event, options }, name) => {
+            if (options.list) {
+                const names = Object.keys(event.group.github_webhooks||{})
+                if (!names.length) return '当前没有监听仓库'
+                return names.sort().join('\n')
+            }
+
+            if (options.add || options.delete) {
+                if (!name) return '请输入仓库名'
+                if (!repoRegExp.test(name)) return '仓库名无效'
+
+                name = name.toLowerCase()
+                const github_webhooks = event.group.github_webhooks
+                if (options.add) {
+                    if (github_webhooks[name]) return '已添加过仓库 '+ name
+                    const [repo] = await bot.database.get('github', { name: [name] })
+                    if (!repo) {
+                        const dispose = bot.middleware(({ cqCode }, next) => {
+                            dispose()
+                            cqCode = cqCode.trim()
+                            if (cqCode && cqCode !== '.' && cqCode !== '。') return next()
+                            return bot.execute({
+                                name: 'github.repos',
+                                event,
+                                args: [name],
+                                options: { add: true, subscribe: true },
+                            })
+                        })
+                        return `尚未添加过仓库 ${name}。发送空行或句号以立即添加并订阅该仓库`
+                    }
+                    github_webhooks[name] = deepClone(defaultEvents)
+                    await bot.database.set('Group',{group_id:event.group_id},{github_webhooks})
+                    subscribe(name, event.group_id, github_webhooks[name])
+                    return '添加成功'
+                } else if (options.delete) {
+                    if (!github_webhooks[name]) return '尚未在当前群聊订阅过仓库'+ name
+                    delete github_webhooks[name]
+                    await bot.database.set('Group',{group_id:event.group_id},{github_webhooks})
+                    unsubscribe(name, event.group_id)
+                    return '删除成功'
+                }
+            }
+
+            return bot.execute({event,name:'help',args:['github']})
+        })
+    bot.command('github/github.authorize <user>','group')
         .alias('github.auth')
         .action(async ({ event }, user) => {
             if (!user) return '请输入用户名'
@@ -55,7 +109,7 @@ export function install(bot:Bot,config:Config){
         })
     const repoRegExp = /^[\w.-]+\/[\w.-]+$/
 
-    bot.command('github.repos [name:string]',"group")
+    bot.command('github/github.repos [name:string]',"group")
         .option('add', '-a')
         .option('delete', '-d')
         .option('subscribe', '-s')
@@ -150,60 +204,6 @@ export function install(bot:Bot,config:Config){
             delete subscriptions[repo]
         }
     }
-    bot.command('github [name]',"group")
-        .alias('gh')
-        .check(({event})=>{
-            if(bot.isAdmin(event.sender.user_id) || bot.isMaster(event.sender.user_id))return
-            return '权限不足'
-        })
-        .option('list', '-l')
-        .option('add', '-a')
-        .option('delete', '-d')
-        .action(async ({ event, options }, name) => {
-            if (options.list) {
-                const names = Object.keys(event.group.github_webhooks||{})
-                if (!names.length) return '当前没有监听仓库'
-                return names.sort().join('\n')
-            }
-
-            if (options.add || options.delete) {
-                if (!name) return '请输入仓库名'
-                if (!repoRegExp.test(name)) return '仓库名无效'
-
-                name = name.toLowerCase()
-                const github_webhooks = event.group.github_webhooks
-                if (options.add) {
-                    if (github_webhooks[name]) return '已添加过仓库 '+ name
-                    const [repo] = await bot.database.get('github', { name: [name] })
-                    if (!repo) {
-                        const dispose = bot.middleware(({ cqCode }, next) => {
-                            dispose()
-                            cqCode = cqCode.trim()
-                            if (cqCode && cqCode !== '.' && cqCode !== '。') return next()
-                            return bot.execute({
-                                name: 'github.repos',
-                                event,
-                                args: [name],
-                                options: { add: true, subscribe: true },
-                            })
-                        })
-                        return `尚未添加过仓库 ${name}。发送空行或句号以立即添加并订阅该仓库`
-                    }
-                    github_webhooks[name] = deepClone(defaultEvents)
-                    await bot.database.set('Group',{group_id:event.group_id},{github_webhooks})
-                    subscribe(name, event.group_id, github_webhooks[name])
-                    return '添加成功'
-                } else if (options.delete) {
-                    if (!github_webhooks[name]) return '尚未在当前群聊订阅过仓库'+ name
-                    delete github_webhooks[name]
-                    await bot.database.set('Group',{group_id:event.group_id},{github_webhooks})
-                    unsubscribe(name, event.group_id)
-                    return '删除成功'
-                }
-            }
-
-            return bot.execute({event,name:'help',args:['github']})
-        })
     async function request(method: Method, url: string, event: GroupMessageEvent, body: any, message: string) {
         return bot.github.request(method, 'https://api.github.com' + url, event, body)
             .then(() => message + '成功')
@@ -212,7 +212,7 @@ export function install(bot:Bot,config:Config){
                 return message + '失败'
             })
     }
-    bot.command('github.issue [title] [body:text]',"group")
+    bot.command('github/github.issue [title] [body:text]',"group")
         .option('repo', '-r [repo:string]')
         .action(async ({ event, options }, title, body) => {
             if (!options.repo) return '请输入仓库名'
@@ -226,7 +226,7 @@ export function install(bot:Bot,config:Config){
                 body,
             }, '创建')
         })
-    bot.command('github.star [repo]',"group")
+    bot.command('github/github.star [repo]',"group")
         .option('repo', '-r [repo:string]')
         .action(async ({ event, options }) => {
             if (!options.repo) return '请输入仓库名'

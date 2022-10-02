@@ -4,6 +4,8 @@ import {install as request} from './request'
 import * as math from './math'
 import {Request} from "./request";
 export * from './request'
+import * as status from './status'
+import * as logs from './logs'
 declare module 'zhin'{
     namespace Bot{
         interface Services{
@@ -19,6 +21,8 @@ export function install(bot:Bot,config:Utils.Config={}){
     config.time!==false && bot.plugin(time)
     config.math!==false && bot.plugin(math)
     bot.plugin(request)
+    bot.plugin(logs)
+    bot.plugin(status)
 }
 export namespace Utils{
     export interface Config{
