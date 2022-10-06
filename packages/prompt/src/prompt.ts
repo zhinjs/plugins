@@ -55,7 +55,14 @@ export class Prompt{
             format:Prompt.transforms['confirm']
         })
     }
-    list<T extends keyof Prompt.BaseTypes>(message:Sendable='请输入',config:Prompt.Option<'list'>){
+    qq(message:Sendable='请输入qq'){
+        return this.$prompt({
+            type:'qq',
+            message,
+            format:Prompt.transforms['number'],
+        })
+    }
+    list<T extends keyof Prompt.BaseTypes>(message:Sendable='请输入',config:Prompt.Option<'list',T>){
         return this.$prompt({
             type:'list',
             message:`${message}\n值之间使用'${config.separator||','}'分隔`,
@@ -86,6 +93,7 @@ export namespace Prompt{
     export interface BaseTypes{
         text:string
         number:number
+        qq:number
         confirm:boolean
         regexp:RegExp
         date:Date
@@ -145,6 +153,11 @@ export namespace Prompt{
     defineTransform("number",(event)=>{
         if(!/^[0-9]*$/.test(event.cqCode)) throw new Error('type Error')
         return +event.cqCode
+    })
+    defineTransform('qq',(event)=>{
+        const atReg=/^\[type=at,qq=(\d+).+]/
+        if(atReg.test(event.cqCode)) return +event.cqCode.replace(atReg,(str)=>str)
+        return transforms["number"](event)
     })
     defineTransform('text',(event)=>{
         return event.cqCode

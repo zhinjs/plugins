@@ -25,7 +25,7 @@ export function install(bot:Bot,timeout:number=60000){
                     message:'输入年龄',
                 },
                 age:{
-                    type:"text",
+                    type:"number",
                     message:'请输入性别'
                 }
             })

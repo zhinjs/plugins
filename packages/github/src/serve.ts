@@ -6,7 +6,7 @@ import {Request} from "@zhinjs/plugin-utils";
 import {GroupMessageEvent} from 'icqq/'
 import {GithubTable} from "./models/github";
 import {EventConfig} from './events'
-
+import '@zhinjs/plugin-prompt'
 export type ReplyPayloads = {
     [K in keyof ReplyHandler]?: ReplyHandler[K] extends (...args: infer P) => any ? P : never
 }
@@ -79,10 +79,7 @@ export class GitHub{
         })
     }
     async authorize(event: GroupMessageEvent, message: string) {
-        const name = await this.bot.prompt({
-            type:'text',
-            message
-        },event)
+        const name = await event.prompt.text(message)
         if (name) {
             await this.bot.execute({ name: 'github.authorize',event, args: [name] })
         } else {

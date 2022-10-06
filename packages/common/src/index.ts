@@ -2,6 +2,7 @@ import {Bot, toJSON} from "zhin";
 import {toCqcode,fromCqcode} from 'icqq-cq-enable'
 import {segment,Member,Friend,Group,Discuss,Forwardable} from 'icqq'
 import * as music from './music'
+import '@zhinjs/plugin-prompt'
 export interface RecallConfig {
     recall?: number
 }
@@ -173,7 +174,7 @@ export function github(bot: Bot) {
 export interface Config extends BasicConfig {
     name?: string
 }
-
+export const using=['prompt']
 export function install(bot: Bot, config: Config={}) {
     bot.command('code <pluginName:string>')
         .desc('输出指定插件源码')
@@ -219,23 +220,20 @@ export function install(bot: Bot, config: Config={}) {
             })
             let finished=!options.multiple
             while (!finished){
-                const {message,user_id,exit}=await bot.prompt([
-                    {
+                const {message,user_id,exit}=await event.prompt.prompts({
+                    message:{
                         type:'text',
-                        name:'message',
-                        message: '请输入消息内容'
+                        message:'请输入消息内容'
                     },
-                    {
+                    user_id:{
                         type:'qq',
-                        name:'user_id',
                         message:'请输入模拟发送者id'
                     },
-                    {
+                    exit:{
                         type:'confirm',
-                        name:'exit',
                         message:'是否结束?'
                     }
-                ],event)
+                })
                 if(message && user_id) messageArr.push({
                     message:fromCqcode(message as string),
                     user_id:user_id as number,

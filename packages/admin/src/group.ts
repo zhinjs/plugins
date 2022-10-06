@@ -1,6 +1,7 @@
 import {Bot} from "zhin";
 import{core} from 'icqq'
 export const name='groupAdmin'
+import '@zhinjs/plugin-prompt'
 export function install(ctx: Bot) {
     ctx.command('group','group')
         .desc('群功能')
@@ -29,11 +30,7 @@ export function install(ctx: Bot) {
         .auth("admins",'master')
         .action(async ({event})=>{
             if(ctx.pickGroup(event.group_id).is_owner) {
-                const {confirm}=await ctx.prompt([{
-                    type:"confirm",
-                    message:'机器人为群主，确认解散？',
-                    name:'confirm'
-                }],event)
+                const confirm=await event.prompt.confirm('机器人为群主，确认解散？')
                 if(!confirm) return
             }
             await event.reply('再见了，各位')
@@ -46,14 +43,8 @@ export function install(ctx: Bot) {
         .auth("admins","admin","owner","master")
         .action(async ({event, options}, ...user_ids) => {
             if (!user_ids.length) {
-                const {ids} = await ctx.prompt({
-                    type: 'list',
-                    message: '请输入你要禁言的成员qq',
-                    separator:',',
-                    name: 'ids',
-                    format: (value) => value.map(val => Number(val))
-                },event)
-                if (ids.length) user_ids.push(...ids)
+                const ids = await event.prompt.list('请输入你要禁言的成员qq',{child_type:'number'})
+                if (ids) user_ids.push(...ids)
             }
             if (!user_ids.length) return '禁言了0个成员'
             for (const user_id of user_ids) {
@@ -69,14 +60,8 @@ export function install(ctx: Bot) {
         .auth("admins","admin","owner","master")
         .action(async ({event, options}, ...user_ids) => {
             if (!user_ids.length) {
-                const {ids} = await ctx.prompt({
-                    type: 'list',
-                    message: '请输入你要踢出的成员qq',
-                    separator:',',
-                    name: 'ids',
-                    format: (value) => value.map(val => Number(val))
-                },event)
-                if (ids.length) user_ids.push(...ids)
+                const ids = await event.prompt.list('请输入你要踢出的成员qq',{child_type:'number'})
+                if (ids) user_ids.push(...ids)
             }
             if (!user_ids.length) return '踢出了0个成员'
             for (const user_id of user_ids) {
@@ -88,13 +73,7 @@ export function install(ctx: Bot) {
         .desc('邀请好友加入群')
         .action(async ({event, options}, ...user_ids) => {
             if (!user_ids.length) {
-                const {ids} = await ctx.prompt({
-                    type: 'list',
-                    message: '请输入你要邀请的好友qq',
-                    separator:',',
-                    format: (value) => value.map(val => Number(val)),
-                    name: 'ids'
-                },event)
+                const ids = await event.prompt.list('请输入你要邀请的好友qq',{child_type:'number'})
                 if (ids) user_ids.push(...ids)
             }
             if (!user_ids.length) return '邀请了了0个好友'
@@ -109,14 +88,8 @@ export function install(ctx: Bot) {
         .auth("owner","master")
         .action(async ({event,options}, ...user_ids)=>{
             if (!user_ids.length) {
-                const {ids} = await ctx.prompt({
-                    type: 'list',
-                    message: `请输入你要${!options.cancel?'设置':'取消'}管理员的成员qq`,
-                    name: 'ids',
-                    separator:',',
-                    format: (value) => value.map(val => Number(val))
-                },event)
-                if (ids.length) user_ids.push(...ids)
+                const ids = await event.prompt.list(`请输入你要${!options.cancel?'设置':'取消'}管理员的成员qq`,{child_type:'number'})
+                if (ids) user_ids.push(...ids)
             }
             if (!user_ids.length) return `${!options.cancel?'设置':'取消'}了0个管理员`
             for (const admin of user_ids) {
@@ -134,20 +107,12 @@ export function install(ctx: Bot) {
         })
         .action(async ({event},title,user_id)=>{
             if(!user_id){
-                const {id} = await ctx.prompt({
-                    type: 'number',
-                    message: `请输入你要设置头衔的成员qq`,
-                    name: 'id',
-                },event)
+                const id = await event.prompt.number('请输入你要设置头衔的成员qq')
                 if (id) user_id=id
             }
             if(!user_id)return '群成员qq无效'
             if(!title){
-                const {nTitle} = await ctx.prompt({
-                    type: 'text',
-                    message: `请输入你要设置头衔的成员qq`,
-                    name: 'nTitle',
-                },event)
+                const nTitle = await event.prompt.text('请输入你要设置的头衔')
                 if (nTitle) title=nTitle
             }
             if(!title) return '头衔不能为空'
@@ -157,26 +122,18 @@ export function install(ctx: Bot) {
     ctx.command('admin/group/setCard [card:string] [user_id:qq]','group')
         .desc('设置群成员名片')
         .auth("admins","admin","owner","master")
-        .action(async ({event},title,user_id)=>{
+        .action(async ({event},card,user_id)=>{
             if(!user_id){
-                const {id} = await ctx.prompt({
-                    type: 'number',
-                    message: `请输入你要设置名片的成员qq`,
-                    name: 'id',
-                },event)
+                const id = await event.prompt.number('请输入你要设置名片的成员qq')
                 if (id) user_id=id
             }
             if(!user_id)return '群成员qq无效'
-            if(!title){
-                const {nTitle} = await ctx.prompt({
-                    type: 'text',
-                    message: `请输入你要设置名片的成员qq`,
-                    name: 'nTitle',
-                },event)
-                if (nTitle) title=nTitle
+            if(!card){
+                const nCard = await event.prompt.text('请输入你要设置的名片')
+                if (nCard) card=nCard
             }
-            if(!title) return '名片不能为空'
-            await ctx.pickGroup(event['group_id']).setCard(user_id,title)
+            if(!card) return '名片不能为空'
+            await ctx.pickGroup(event['group_id']).setCard(user_id,card)
             return '执行成功'
         })
 }

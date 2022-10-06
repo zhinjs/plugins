@@ -1,6 +1,7 @@
-import {Bot, Prompt, template} from "zhin";
+import {Bot, template} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
+import '@zhinjs/plugin-prompt'
 import {Model} from "sequelize";
 
 interface TaskWithSteps extends Task {
@@ -25,7 +26,7 @@ export interface Pagination {
     pageSize: number
     pageNum: number
 }
-export const using=['database']
+export const using=['database','prompt']
 export function install(bot:Bot){
     const taskService=new Tasks(bot)
     bot.service('tasks',taskService)
@@ -160,35 +161,30 @@ class Tasks {
     }
 
     async modifyTask(event: Bot.MessageEvent, id?: number) {
-        const questions: Prompt.Options<any>[] = [
-            {
+        let stepAddFinished: boolean = false
+        const task: TaskWithSteps = (await event.prompt.prompts({
+            name:{
                 type: 'text',
                 message: '请输入任务名称',
-                name: 'name'
             },
-            {
+            desc:{
                 type: 'text',
                 message: '请输入任务描述',
-                name: 'desc'
             }
-        ]
-        let stepAddFinished: boolean = false
-        const task: TaskWithSteps = (await this.bot.prompt(questions,event)) as Task
+        })) as Task
         if (!task) return '输入超时'
         while (!stepAddFinished) {
             const steps = task.steps ||= []
-            const step = await this.bot.prompt([
-                {
+            const step = await event.prompt.prompts({
+                template:{
                     type: 'text',
                     message: `第${steps.length + 1}步：\n请输入需要执行的指令`,
-                    name: 'template'
                 },
-                {
+                hasMore:{
                     type: 'confirm',
-                    message: `是否继续添加`,
-                    name: 'hasMore'
+                    message: '是否继续添加',
                 }
-            ],event) as Record<string, any>
+            })
             if (!step) return '输入超时'
             steps.push({index: steps.length + 1, template: step.template})
             if (!step.hasMore) break;

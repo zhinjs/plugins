@@ -1,6 +1,5 @@
 import {Dialogue} from './teach'
 import {Bot, Plugin} from "zhin";
-import {GroupMessageEvent,DiscussMessageEvent,PrivateMessageEvent} from "icqq/lib/events";
 
 function hasEnv(envs, type, target) {
     return envs.length === 0 || envs.some(item => {

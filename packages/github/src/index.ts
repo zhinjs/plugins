@@ -16,7 +16,7 @@ declare module 'zhin'{
     }
 }
 export const name='github'
-export const using=['database','http','utils']
+export const using=['database','http','utils','prompt']
 export function install(bot:Bot,config:Config){
     config.path=sanitize(config.path)
     const { database } = bot

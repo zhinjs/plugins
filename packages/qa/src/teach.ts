@@ -1,4 +1,5 @@
 import {Bot,template} from "zhin";
+import '@zhinjs/plugin-prompt'
 import {Op} from "sequelize";
 import {QA} from "./models";
 
@@ -50,6 +51,7 @@ template.set('teach', {
 {2}`,
     '404': `{0}({1})未找到任何有关问答`
 })
+export const using=['database','prompt']
 export default function install(ctx: Bot) {
     ctx.command('qa [question:string] [answer:string]')
         .desc('问答管理')
@@ -195,12 +197,11 @@ export default function install(ctx: Bot) {
                 if (options.edit) {
                     if (dialogues.length > 1) {
                         await event.reply(template('teach.list', filterResult(dialogues).rows.join('\n'), '请输入要编辑的问答索引'))
-                        const {index} = await ctx.prompt({
-                            type:'select',
-                            name:'index',
-                            message:'请选择要编辑的问答',
-                            choices:filterResult(dialogues).rows.map((item,i)=>({title:item,value:i}))
-                        },event)
+                        const index = await event.prompt.select('请选择要编辑的问答',{
+                            child_type:'number',
+                            options:filterResult(dialogues).rows.map((item,i)=>({title:item,value:i}))
+                        })
+                        if(typeof index !=='number') return '输入超时'
                         if (index < 1 || index > dialogues.length) {
                             await event.reply('输入错误')
                             return
@@ -214,11 +215,7 @@ export default function install(ctx: Bot) {
                     return template('teach.edit', dialogue.get('id'))
                 }
                 if(dialogue && dialogue.get('answer')===a){
-                    const {confirm}=await ctx.prompt({
-                        type:'confirm',
-                        name:'confirm',
-                        message:'已存在相同问答，是否继续添加？'
-                    },event)
+                    const confirm=await event.prompt.confirm('已存在相同问答，是否继续添加？')
                     if(!confirm) return '已取消添加'
                 }
                 dialogue = await ctx.database.models.QA.create({

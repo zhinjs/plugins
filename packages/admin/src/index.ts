@@ -3,6 +3,7 @@ import * as config from './config'
 import * as groupAdmin from './group'
 import * as pluginManage from './plugin'
 export const name ='admin'
+export const using=['prompt'] as const
 export function install(bot:Bot){
     bot.command('admin')
         .desc('管理知音')

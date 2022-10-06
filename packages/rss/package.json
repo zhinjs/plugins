@@ -1,16 +1,16 @@
 {
-  "name": "@zhinjs/plugin-admin",
+  "name": "@zhinjs/plugin-rss",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.2",
-  "description": "知音管理插件",
+  "version": "0.0.1",
+  "description": "rss plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/admin"
+    "directory": "plugins/rss"
   },
   "keywords": [
-    "admin",
+    "rss",
     "plugin",
     "zhin"
   ],
@@ -26,7 +26,10 @@
   },
   "homepage": "https://github.com/zhinjs/plugins#readme",
   "dependencies": {
+    "feedparser": "^2.2.10",
+    "rss-feed-emitter": "^3.2.3"
   },
   "devDependencies": {
+    "@types/feedparser": "^2.2.5"
   }
 }
