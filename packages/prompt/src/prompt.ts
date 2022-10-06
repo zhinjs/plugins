@@ -6,9 +6,17 @@ export class Prompt{
     constructor(private bot:Bot,private event:Bot.MessageEvent,public timeout:number) {
         this.fullChannelId=Bot.getFullChannelId(event)
     }
-    async $prompt<T extends keyof Prompt.Types,CT extends keyof Prompt.BaseTypes,M extends boolean=false>(options:Prompt.Options<T,CT,M>){
+    async prompts<O extends Prompt.Options>(options:O):Promise<Prompt.ResultS<O>>{
+        let result:Prompt.ResultS<O>={} as Prompt.ResultS<O>
+        const names=Object.keys(options)
+        for(const name of names){
+            result[name as keyof O]=await this[options[name].type](options[name].message,options[name])
+        }
+        return result
+    }
+    async $prompt<T extends keyof Prompt.Types,CT extends keyof Prompt.BaseTypes,M extends boolean=false>(options:Prompt.Option<T,CT,M>){
         await this.event.reply(options.message)
-        return new Promise<T extends 'select'?Prompt.Select<CT,M>:T extends 'list'?Array<Prompt.BaseTypes[CT]>:Prompt.Types[T]>((resolve)=>{
+        return new Promise<Prompt.Result<T, CT, M>>((resolve)=>{
             const dispose=this.bot.middleware(async (event,next)=>{
                 if(this.fullChannelId!==Bot.getFullChannelId(event)) return next()
                 resolve(options.format(event))
@@ -47,29 +55,29 @@ export class Prompt{
             format:Prompt.transforms['confirm']
         })
     }
-    list<T extends keyof Prompt.BaseTypes>(message:Sendable='请输入',config:Prompt.ListConfig<T>){
+    list<T extends keyof Prompt.BaseTypes>(message:Sendable='请输入',config:Prompt.Option<'list'>){
         return this.$prompt({
             type:'list',
             message:`${message}\n值之间使用'${config.separator||','}'分隔`,
             initial:config.initial||[],
-            child_type:config.type,
+            child_type:config.child_type,
             format(event){
                 return Prompt.transforms['list'][config.type](event,config.separator||',')
             }
         })
     }
-    select<T extends keyof Prompt.BaseTypes,M extends boolean>(message:Sendable='请选择',config:Prompt.SelectConfig<T,M>){
+    select<T extends keyof Prompt.BaseTypes,M extends boolean>(message:Sendable='请选择',config:Prompt.Option<'select',T>){
         return this.$prompt({
             type:'select',
             message:`${message}\n${config.options.map((option,index)=>{
                 return `${index+1}:${option.label}`
             }).join('\n')}${config.multiple?`\n选项之间使用'${config.separator||','}'分隔`:''}`,
             multiple:config.multiple,
-            child_type:config.type,
-            initial:(config.multiple?[]:Prompt.defaultValue[config.type]) as Prompt.Select<T,M>,
+            child_type:config.child_type,
+            initial:config.initial,
             format:(event)=>{
                 const chooseIdxArr=event.cqCode.split(config.separator||',').map(Number)
-                return Prompt.transforms['select'][config.type][config.multiple?'true':'false'](event,config.options,chooseIdxArr) as any
+                return Prompt.transforms['select'][config.child_type][config.multiple?'true':'false'](event,config.options,chooseIdxArr) as any
             }
         })
     }
@@ -88,41 +96,28 @@ export namespace Prompt{
     }
     export interface Types<CT extends keyof BaseTypes=keyof BaseTypes,M extends boolean=false> extends BaseTypes,QuoteTypes<CT,M>{
     }
+    export type Result<T extends keyof Types,CT extends keyof BaseTypes,M extends boolean>=T extends 'select'?Select<CT,M>:T extends 'list'?Array<BaseTypes[CT]>:Types[T]
     export type List<T extends keyof BaseTypes=keyof BaseTypes>=Array<BaseTypes[T]>
     export type Select<T extends keyof BaseTypes=keyof BaseTypes,M extends boolean=false>=M extends true?Array<BaseTypes[T]>:BaseTypes[T]
-    export interface Options<T extends keyof Types=keyof Types,CT extends keyof BaseTypes=keyof BaseTypes,M extends boolean=false>{
-        message:Sendable
-        type:T
+    export type Option<T extends keyof Types=keyof Types,CT extends keyof BaseTypes=keyof BaseTypes,M extends boolean=false> = {
+        message?:Sendable
+        type?:T
         child_type?:CT
-        multiple?:M
-        initial?:T extends 'select'?Select<CT,M>:T extends 'list'?Array<BaseTypes[CT]>:Types[T]
+        multiple?:T extends 'select'?boolean:never
+        initial?:Result<T, CT, M>
         timeout?:number
-        format?:(event:Bot.MessageEvent)=>T extends 'select'?Select<CT,M>:T extends 'list'?Array<BaseTypes[CT]>:Prompt.Types[T]
+        format?:(event:Bot.MessageEvent)=>Result<T, CT, M>
         validate?:(value:Types[T],...args:any[])=>boolean
-        [key:string]:any
-    }
-    export type NamedOptions<N extends string|symbol=string,T extends keyof Types=keyof Types,CT extends keyof BaseTypes=keyof BaseTypes,M extends boolean=false>={
-        name:N
-    } & Options<T,CT,M>
-    export const defaultValue:{[P in keyof BaseTypes]?:BaseTypes[P]}={
-        number:0,
-        confirm:false,
-        text:'',
-        date:new Date(),
-        regexp:new RegExp('')
-    }
-    export interface ListConfig<T extends keyof BaseTypes= keyof BaseTypes>{
-        type:T
-        initial?:Array<BaseTypes[T]>
         separator?:string
+        options?:T extends 'select'?Prompt.SelectOption<CT>[]:never
     }
-    export interface SelectConfig<T extends keyof BaseTypes= keyof BaseTypes,M extends boolean=boolean>{
-        type:T
-        initial?:M extends true?T[]:T
-        options:Array<SelectOption<T>>
-        multiple:M
-        separator?:string
+    export interface Options{
+        [key:string]:Option
     }
+    export type ResultS<S extends Dict>={
+        [T in keyof S]:ResultItem<S[T]>
+    }
+    export type ResultItem<O>= O extends Option<infer T,infer CT,infer M>?Result<T, CT, M>:unknown
     export interface SelectOption<T extends keyof BaseTypes>{
         label:Sendable
         value:BaseTypes[T]
