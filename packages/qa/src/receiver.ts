@@ -71,9 +71,12 @@ export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
         return answerText
     }
 }
-
+export const name='qa.receiver'
 export default function install(bot: Bot) {
+    let preMessageId:string=''
     bot.middleware(async (message,next) =>{
+        if(preMessageId===message.message_id) return next()
+        preMessageId=message.message_id
         if(message.post_type==='message'){
             const result=await triggerTeach(bot, message).catch(()=>{})
             if(result) message.reply(result)

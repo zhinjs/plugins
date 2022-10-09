@@ -90,6 +90,12 @@ export class Prompt{
             }
         })
     }
+    toJSON(){
+        return {
+            fullChannelId:this.fullChannelId,
+            timeout:this.timeout
+        }
+    }
     select<T extends keyof Prompt.BaseTypes,M extends boolean>(message:Sendable='请选择',config:Prompt.Option<'select',T,M>){
         const options:Prompt.Option<'select',T,M>={
             type:'select',

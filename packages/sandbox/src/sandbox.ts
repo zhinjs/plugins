@@ -226,7 +226,6 @@ export class Sandbox {
 
     include(key: string, value: any) {
         this.context[key] = value
-        console.log(key,value)
         this.runInContext(`const ${key} = this.${key}
         contextify(${key})`)
     }

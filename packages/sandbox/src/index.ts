@@ -61,7 +61,9 @@ export function install(this:Plugin,bot:Bot){
                 startWorker(bot)
                 dispose=bot.middleware(async (event,next)=>{
                     await next()
-                    worker!.send(event.toJSON('prompt' as any))
+                    const data=event.toJSON('prompt' as any)
+                    data.cqCode=event.toCqcode()
+                    worker!.send(data)
                 })
                 return '沙箱已启动'
             }
