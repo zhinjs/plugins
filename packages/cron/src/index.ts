@@ -130,7 +130,7 @@ export function install(bot: Bot, config: Config={}) {
                 assignee: bot.uin,
                 interval,
                 command: options.rest,
-                event: toJSON(event),
+                event: event.toJSON('prompt' as any),
             })
             prepareCron(cron.toJSON(), event)
             return `日程已创建，编号为 ${cron.toJSON().id}。`

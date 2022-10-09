@@ -110,7 +110,7 @@ export class AuthService extends DataService<UserAuth> {
 
         bot.middleware(async (session,next) => {
             const state = states[session.user_id]
-            if (state && state[0] === session.cqCode) {
+            if (state && state[0] === session.toCqcode()) {
                 const user=session['friend']||session['member']
                 if (!user.expire || user.expire < Date.now()) {
                     user.token = v4()

@@ -39,6 +39,7 @@ export function install(bot:Bot,config:Config){
         return _ctx.status = 200
     })
     bot.command('github [name]',"group")
+        .desc('github仓库管理指令')
         .alias('gh')
         .check(({event})=>{
             if(bot.isAdmin(event.sender.user_id) || bot.isMaster(event.sender.user_id))return
@@ -64,9 +65,9 @@ export function install(bot:Bot,config:Config){
                     if (github_webhooks[name]) return '已添加过仓库 '+ name
                     const [repo] = await bot.database.get('github', { name: [name] })
                     if (!repo) {
-                        const dispose = bot.middleware(({ cqCode }, next) => {
+                        const dispose = bot.middleware((event , next) => {
                             dispose()
-                            cqCode = cqCode.trim()
+                            const cqCode = event.toCqcode().trim()
                             if (cqCode && cqCode !== '.' && cqCode !== '。') return next()
                             return bot.execute({
                                 name: 'github.repos',

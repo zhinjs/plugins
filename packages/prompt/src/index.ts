@@ -9,33 +9,55 @@ export function install(bot:Bot,timeout:number=60000){
     bot.before('message',(event)=>{
         event.prompt=new Prompt(bot,event,timeout)
     })
-    bot.command('test')
-        .action(async ({event})=>{
-            // const confirm=await event.prompt.confirm('确认么？')
-            // await event.reply('你输入的是'+(typeof confirm)+':'+confirm)
-            // const text=await event.prompt.text('请输入文本')
-            // await event.reply('你输入的是'+(typeof text)+':'+text)
-            // const number=await event.prompt.number('请输入数字')
-            // await event.reply('你输入的是'+(typeof number)+':'+number)
-            // const list=await event.prompt.list('请输入',{type:'text'})
-            // await event.reply('你输入的是'+(typeof list)+':'+list)
-            const obj=await event.prompt.prompts({
-                name:{
-                    type:'text',
-                    message:'输入年龄',
-                },
-                age:{
-                    type:"number",
-                    message:'请输入性别'
-                }
-            })
-            const select=await event.prompt.select('请选择',{
-                child_type:'date',
-                multiple:true,
-                options:[
-                    {label:'第一项',value:new Date()},
-                    {label:'第二项',value:new Date()}
-                ]})
-            await event.reply('你输入的是'+(typeof select)+':'+select)
+    const command=bot.command('prompt')
+        .desc('提示输入工具')
+    command.subcommand('prompt.text [message:text]')
+        .desc('提示用户输入一串文本')
+        .option('initial','-i <initial:text> 默认值')
+        .action(async ({event,options},message)=>{
+            return await event.prompt.text(message, options.initial)
         })
+    command.subcommand('prompt.number [message:text]')
+        .desc('提示用户输入一个数值')
+        .option('initial','-i <initial:number> 默认值')
+        .action(async ({event,options},message)=>{
+            return ''+(await event.prompt.number(message, options.initial))
+        })
+    command.subcommand('prompt.confirm [message:text]')
+        .desc('提示用户确认操作')
+        .option('initial','-i <initial:boolean> 默认值')
+        .action(async ({event,options},message)=>{
+            return ''+(await event.prompt.confirm(message, options.initial))
+        })
+    command.subcommand('prompt.date [message:text]')
+        .desc('提示用户输入一个日期')
+        .option('initial','-i <initial:date> 默认值')
+        .action(async ({event,options},message)=>{
+            return ''+(await event.prompt.date(message, options.initial))
+        })
+    command.subcommand('prompt.regexp [message:text]')
+        .desc('提示用户输入一个正则表达式')
+        .option('initial','-i <initial:regexp> 默认值')
+        .action(async ({event,options},message)=>{
+            return ''+(await event.prompt.regexp(message, options.initial))
+        })
+    command.subcommand('prompt.list <child_type:string> [message:text]')
+        .desc('提示用户输入一个指定类型的列表')
+        .option('initial','-i <initial:array> 默认值')
+        .action(async ({event,options},child_type,message)=>{
+            const allowTypes:(keyof Prompt.BaseTypes)[]=['text','number','confirm','date','regexp','qq']
+            if(!allowTypes.includes(child_type as keyof Prompt.BaseTypes)) throw new Error('子类型错误')
+            return ''+(await event.prompt.list(message, {child_type:child_type as keyof Prompt.BaseTypes,initial:options.initial}))
+        })
+    command.subcommand('prompt.select <child_type:string> [message:text]')
+        .desc('提示用户输入一个指定类型的列表')
+        .option('multiple','-m 是否多选')
+        .option('options','-o <options:array> 可选项列表({label,value}数组)}')
+        .option('initial','-i <initial> 默认值')
+        .action(async ({event,options},child_type,message)=>{
+            const allowTypes:(keyof Prompt.BaseTypes)[]=['text','number','confirm','date','regexp','qq']
+            if(!allowTypes.includes(child_type as keyof Prompt.BaseTypes)) throw new Error('子类型错误')
+            return ''+(await event.prompt.select(message, {child_type:child_type as keyof Prompt.BaseTypes,initial:options.initial,multiple:options.multiple,options:options.options}))
+        })
+
 }

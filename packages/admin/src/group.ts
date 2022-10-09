@@ -21,7 +21,7 @@ export function install(ctx: Bot) {
                 "5": ctx.sig.seq + 1,
                 "6": "616E64726F696420382E362E30"
             })).then(res=>{
-                const strArr=res.toString().match(/[\w\d\s\u4e00-\u9fa5]/g)||[]
+                const strArr=res.toString().match(/[\w\d\s\u4e00-\u9fa5"',，.。/、\]\[【】\\n\s！!?？——_<>%;‘’；)《（）》(&+=`“”·*#@@]/g)||[]
                 return strArr.join('')
             })
         )
@@ -39,19 +39,25 @@ export function install(ctx: Bot) {
         })
     ctx.command('admin/group/mute [...userIds:qq]', 'group')
         .desc('禁言群成员')
+        .option('all','-a 全体禁言')
+        .option('cancel','-c 取消禁言')
         .option('time', '-t <time:number> 禁言时长（单位：秒；默认：600）')
         .auth("admins","admin","owner","master")
         .action(async ({event, options}, ...user_ids) => {
-            if (!user_ids.length) {
-                const ids = await event.prompt.list('请输入你要禁言的成员qq',{child_type:'number'})
+            if(!options.time && !options.all) options.cancel=true
+            if (!user_ids.length && !options.all) {
+                const ids = await event.prompt.list(`请输入你要${options.cancel?'取消':''}禁言的成员qq`,{child_type:'number'})
                 if (ids) user_ids.push(...ids)
             }
-            if (!user_ids.length) return '禁言了0个成员'
-            for (const user_id of user_ids) {
-                await ctx.pickGroup(event['group_id']).muteMember(user_id, options.time)
+            if(options.all){
+                await ctx.pickGroup(event.group_id).muteAll(!options.cancel)
+                return `已${options.cancel?'取消':''}全体禁言`
             }
-            if (options.time === 0) return `已解除禁言:${user_ids.join(',')}。`
-            return `已禁言:${user_ids.join(',')}。\n禁言时长：${(options.time || 600) / 60}分钟`
+            if (!user_ids.length) return `${options.cancel?'取消':''}禁言了0个成员`
+            for (const user_id of user_ids) {
+                await ctx.pickGroup(event['group_id']).muteMember(user_id, options.cancel?0:options.time)
+            }
+            return `已${options.cancel?'取消':''}禁言:${user_ids.join(',')}。${options.cancel?'':`\n禁言时长：${(options.time || 600) / 60}分钟`}`
         })
 
     ctx.command('admin/group/kick [...user_id:qq]', 'group')

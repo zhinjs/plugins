@@ -1,16 +1,24 @@
 {
-  "name": "@zhinjs/plugin-admin",
+  "name": "@zhinjs/plugin-sandbox",
   "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "version": "0.0.5",
-  "description": "知音管理插件",
+  "description": "sandbox plugin",
+  "dependencies": {
+    "assert": "^2.0.0",
+    "cheerio": "^1.0.0-rc.10",
+    "crypto": "^1.0.1",
+    "moment": "^2.29.3",
+    "querystring": "^0.2.1",
+    "string.ify": "^1.0.64",
+    "utf-8-validate": "^5.0.9"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/admin"
+    "directory": "plugins/sandbox"
   },
   "keywords": [
-    "admin",
+    "sandbox",
     "plugin",
     "zhin"
   ],
@@ -24,9 +32,5 @@
   "bugs": {
     "url": "https://github.com/zhinjs/plugins/issues"
   },
-  "homepage": "https://github.com/zhinjs/plugins#readme",
-  "dependencies": {
-  },
-  "devDependencies": {
-  }
+  "homepage": "https://github.com/zhinjs/plugins#readme"
 }

@@ -10,6 +10,7 @@ export class Prompt{
         let result:Prompt.ResultS<O>={} as Prompt.ResultS<O>
         const names=Object.keys(options)
         for(const name of names){
+            // @ts-ignore
             result[name as keyof O]=await this[options[name].type](options[name].message,options[name])
         }
         return result
@@ -47,6 +48,22 @@ export class Prompt{
             format:Prompt.transforms['number'],
         })
     }
+    date(message:Sendable='请输入日期',initial=new Date()){
+        return this.$prompt({
+            type:'date',
+            message,
+            initial,
+            format:Prompt.transforms['date'],
+        })
+    }
+    regexp(message:Sendable='请输入正则',initial=/.+/){
+        return this.$prompt({
+            type:'regexp',
+            message,
+            initial,
+            format:Prompt.transforms['regexp'],
+        })
+    }
     confirm(message:Sendable='确认么？',initial:boolean=false){
         return this.$prompt({
             type:'confirm',
@@ -59,7 +76,7 @@ export class Prompt{
         return this.$prompt({
             type:'qq',
             message,
-            format:Prompt.transforms['number'],
+            format:Prompt.transforms['qq'],
         })
     }
     list<T extends keyof Prompt.BaseTypes>(message:Sendable='请输入',config:Prompt.Option<'list',T>){
@@ -73,20 +90,19 @@ export class Prompt{
             }
         })
     }
-    select<T extends keyof Prompt.BaseTypes,M extends boolean>(message:Sendable='请选择',config:Prompt.Option<'select',T>){
-        return this.$prompt({
+    select<T extends keyof Prompt.BaseTypes,M extends boolean>(message:Sendable='请选择',config:Prompt.Option<'select',T,M>){
+        const options:Prompt.Option<'select',T,M>={
             type:'select',
             message:`${message}\n${config.options.map((option,index)=>{
                 return `${index+1}:${option.label}`
             }).join('\n')}${config.multiple?`\n选项之间使用'${config.separator||','}'分隔`:''}`,
-            multiple:config.multiple,
-            child_type:config.child_type,
-            initial:config.initial,
             format:(event)=>{
-                const chooseIdxArr=event.cqCode.split(config.separator||',').map(Number)
-                return Prompt.transforms['select'][config.child_type][config.multiple?'true':'false'](event,config.options,chooseIdxArr) as any
-            }
-        })
+                const chooseIdxArr=event.toCqcode().split(config.separator||',').map(Number)
+                return Prompt.transforms['select'][config.child_type][config.multiple?'true':'false'](event,config.options,chooseIdxArr) as Prompt.Select<T,M>
+            },
+            ...config
+        }
+        return this.$prompt(options)
     }
 }
 export namespace Prompt{
@@ -111,7 +127,7 @@ export namespace Prompt{
         message?:Sendable
         type?:T
         child_type?:CT
-        multiple?:T extends 'select'?boolean:never
+        multiple?:T extends 'select'?M:boolean
         initial?:Result<T, CT, M>
         timeout?:number
         format?:(event:Bot.MessageEvent)=>Result<T, CT, M>
@@ -151,45 +167,45 @@ export namespace Prompt{
         transforms[type]=transform
     }
     defineTransform("number",(event)=>{
-        if(!/^[0-9]*$/.test(event.cqCode)) throw new Error('type Error')
-        return +event.cqCode
+        if(!/^[0-9]*$/.test(event.toCqcode())) throw new Error('type Error')
+        return +event.toCqcode()
     })
     defineTransform('qq',(event)=>{
         const atReg=/^\[type=at,qq=(\d+).+]/
-        if(atReg.test(event.cqCode)) return +event.cqCode.replace(atReg,(str)=>str)
+        if(atReg.test(event.toCqcode())) return +event.toCqcode().replace(atReg,(str)=>str)
         return transforms["number"](event)
     })
     defineTransform('text',(event)=>{
-        return event.cqCode
+        return event.toCqcode()
     })
     defineTransform('confirm',(event)=>{
-        return ['yes','y','Yes','YES','Y','.','。','确认'].includes(event.cqCode)
+        return ['yes','y','Yes','YES','Y','.','。','确认'].includes(event.toCqcode())
     })
     defineTransform("regexp", (event)=>{
-        return new RegExp(event.cqCode)
+        return new RegExp(event.toCqcode())
     })
     defineTransform('date',(event)=>{
-        if(/^[0-9]$/g.test(event.cqCode)) return new Date(+event.cqCode)
-        return new Date(event.cqCode)
+        if(/^[0-9]$/g.test(event.toCqcode())) return new Date(+event.toCqcode())
+        return new Date(event.toCqcode())
     })
     defineTransform('list',{
         date(event,separator){
-            return event.cqCode.split(separator).map(str=>{
+            return event.toCqcode().split(separator).map(str=>{
                 if(/^[0-9]$/g.test(str)) return new Date(+str)
                 return new Date(str)
             })
         },
         number(event,separator){
-            return event.cqCode.split(separator).map(str=>{
+            return event.toCqcode().split(separator).map(str=>{
                 if(!/^[0-9]$/g.test(str))throw new Error('type Error')
                 return +str
             })
         },
         text(event,separator){
-            return event.cqCode.split(separator)
+            return event.toCqcode().split(separator)
         },
         regexp(event,separator){
-            return event.cqCode.split(separator).map(str=>{
+            return event.toCqcode().split(separator).map(str=>{
                 return new RegExp(str)
             })
         }

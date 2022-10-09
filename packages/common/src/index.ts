@@ -1,6 +1,7 @@
 import {Bot, toJSON} from "zhin";
 import {toCqcode,fromCqcode} from 'icqq-cq-enable'
 import {segment,Member,Friend,Group,Discuss,Forwardable} from 'icqq'
+import {genGroupMessageId,genDmMessageId} from 'icqq/lib/message'
 import * as music from './music'
 import '@zhinjs/plugin-prompt'
 export interface RecallConfig {
@@ -75,7 +76,7 @@ export function send(bot: Bot) {
 
 export function recall(bot: Bot, {recall = 10}: RecallConfig) {
     const recent: Record<string, string[]> = {}
-    bot.on('send', (messageRet, channelId) => {
+    bot.on('message.send.success', (messageRet, channelId) => {
         const list = recent[channelId] ||= []
         list.unshift(messageRet.message_id)
         if (list.length > recall) {
@@ -104,12 +105,27 @@ export function recall(bot: Bot, {recall = 10}: RecallConfig) {
 export function feedback(bot: Bot, {
     operators
 }: { operators: number[]}) {
-    async function createReplyCallback(bot,event, user_id) {
-        const dispose=bot.middleware((message)=>{
-            if(message.message_type==="private" && message.user_id===user_id){
-                event.reply(['来自作者的回复：\n', ...event.message], true)
+    async function createReplyCallback(bot:Bot,event1:Bot.MessageEvent, user_id:number) {
+        const dispose=bot.middleware((event2,next)=>{
+            if(event2.source && event2.sender.user_id===user_id){
+                switch (event2.message_type){
+                    case "private":{
+                        if(genDmMessageId(event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time) !==event1.message_id) return next()
+                        break;
+                    }
+                    case "group":{
+                        if(genGroupMessageId(event2['group_id'],event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time) !==event1.message_id) return next()
+                        break;
+                    }
+                    case "discuss":{
+                        if(genGroupMessageId(event2['discuss_id'],event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time) !==event1.message_id) return next()
+                        break;
+                    }
+                }
+                event1.reply(['来自作者的回复：\n', ...event2.message], true)
                 dispose()
             }
+            else next()
         })
     }
 
@@ -136,7 +152,7 @@ export function feedback(bot: Bot, {
 
 export function respondent(bot: Bot, respondents: Respondent[]) {
     bot.middleware((session) => {
-        const message = session.cqCode.trim()
+        const message = session.toCqcode().trim()
         for (const {match, reply} of respondents) {
             const capture = typeof match === 'string' ? message === match && [message] : message.match(match)
             if (capture) return typeof reply === 'string' ? reply : reply(...capture)
@@ -163,7 +179,7 @@ export function github(bot: Bot) {
     bot.middleware(async (event,next) => {
         await next()
         const mathReg = /(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
-        const match = event.cqCode.match(mathReg)
+        const match = event.toCqcode().match(mathReg)
         if (!match) return
         const [, owner, repo] = match
         const url = `https://opengraph.github.com/repo/${owner}/${repo}`
@@ -175,6 +191,7 @@ export interface Config extends BasicConfig {
     name?: string
 }
 export const using=['prompt']
+export const name='common'
 export function install(bot: Bot, config: Config={}) {
     bot.command('code <pluginName:string>')
         .desc('输出指定插件源码')

@@ -1,22 +1,23 @@
 {
-  "name": "@zhinjs/plugin-common",
+  "name": "@zhinjs/plugin-chess",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.5",
-  "description": "common plugin",
+  "version": "0.0.7",
+  "description": "chess game",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/common"
+    "directory": "games/chess"
   },
   "keywords": [
-    "common",
-    "plugin",
+    "chess",
+    "game",
     "zhin"
   ],
   "files": [
     "lib/**/*.js",
     "lib/**/*.d.ts",
+    "lib/**/*.ttf",
     "lib/**/LICENSE"
   ],
   "author": "凉菜 <admin@liucl.cn>",
@@ -26,13 +27,6 @@
   },
   "homepage": "https://github.com/zhinjs/plugins#readme",
   "dependencies": {
-    "@koa/router": "^12.0.0",
-    "koa-bodyparser": "^4.3.0",
-    "ws": "^8.8.1"
-  },
-  "devDependencies": {
-    "@types/koa": "^2.13.5",
-    "@types/koa__router": "^8.0.11",
-    "@types/ws": "^8.5.3"
+    "canvas": "^2.10.1"
   }
 }

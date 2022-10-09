@@ -53,7 +53,7 @@ export class BotService extends DataService<Dict<BotService.Data>> {
         super(bot, 'bot', { authority: 4 })
 
         bot.before('send', (session) => {
-            session.bot._messageSent.add(1)
+            bot._messageSent.add(1)
         })
 
         bot.on('message', () => {

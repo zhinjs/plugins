@@ -1,5 +1,6 @@
 import {Dialogue} from './teach'
 import {Bot, Plugin} from "zhin";
+import {fromCqcode} from "icqq/lib/message/cqCode";
 
 function hasEnv(envs, type, target) {
     return envs.length === 0 || envs.some(item => {
@@ -10,7 +11,7 @@ function hasEnv(envs, type, target) {
 
 export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
     const teaches = await bot.database.models.QA.findAll()
-    const question=event.cqCode
+    const question=event.toCqcode()
     const dialogues = teaches.map(teach => teach.toJSON())
         .filter((teach) => hasEnv(teach.belongs, event.message_type, event['group_id'] || event['discuss_id'] || event.user_id))
         .filter(teach => {
@@ -46,7 +47,7 @@ export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
                 dialogue.redirect = dialogue.redirect.replace(reg, args[index])
             }
         }
-        event.cqCode = dialogue.redirect
+        event.message = fromCqcode(dialogue.redirect)
         return triggerTeach(bot, event)
     }
     if (dialogue.isReg) {
