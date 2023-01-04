@@ -251,10 +251,11 @@ export function install(bot: Bot, config: Config={}) {
         template = template.replace(/\$A/g, `[CQ:at,qq=all]`)
             .replace(/\$a/g, `[CQ:at,qq=${this.user_id}]`)
             .replace(/\$m/g, `[CQ:at,qq=${bot.uin}]`)
-            .replace(/\$s/g, () => this.sender['card'] || this.sender['title'] || this.sender.nickname);
+            .replace(/\$s/g, () => this.sender['card'] || this.sender['title'] || this.sender.nickname)
+            .replace(/\$S/g, () => `[CQ:reply,id=${this.message_id}]`);
         while (template.match(/\$\(.*\)/)) {
-            const command=findCommand(template)
-            const executeResult = await executeTemplate.call(this,command);
+            const text = /\$\((.*)\)/.exec(template)[1];
+            const executeResult = await executeTemplate.call(this,text);
             if (executeResult && typeof executeResult!=='boolean') {
                 template = template.replace(`$(${command})`, executeResult);
             }
