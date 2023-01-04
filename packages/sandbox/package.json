@@ -1,7 +1,7 @@
 {
   "name": "@zhinjs/plugin-sandbox",
   "main": "lib/index.js",
-  "version": "0.0.8",
+  "version": "0.0.15",
   "description": "sandbox plugin",
   "dependencies": {
     "assert": "^2.0.0",

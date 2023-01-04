@@ -5,8 +5,8 @@ import {EventConfig,addListeners,defaultEvents,CommonPayload} from "./events";
 import {GitHub,Config,ReplyHandler} from "./serve";
 import {encode} from "querystring";
 import {Method} from "axios";
-import {GroupMessageEvent} from "icqq";
-import {genGroupMessageId} from 'icqq/lib/message'
+import {GroupMessageEvent, segment} from "oicq";
+import {genGroupMessageId} from 'oicq/lib/message'
 import {createHmac} from "crypto";
 declare module 'zhin'{
     namespace Bot{
@@ -23,6 +23,15 @@ export function install(bot:Bot,config:Config){
     const { appId, redirect } = config
     const subscriptions: Dict<Dict<EventConfig>> = {}
     bot.service('github',GitHub,config)
+    bot.middleware(async (event,next) => {
+        await next()
+        const mathReg = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
+        const match = event.toCqcode().match(mathReg)
+        if (!match) return
+        const [, owner, repo] = match
+        const url = `https://opengraph.github.com/repo/${owner}/${repo}`
+        event.reply(segment.image(url))
+    })
     const tokens: Dict<number> = Object.create(null)
     bot.router.get(config.path + '/authorize', async (_ctx) => {
         const token = _ctx.query.state
@@ -238,7 +247,7 @@ export function install(bot:Bot,config:Config){
 
             return request('PUT', `/user/starred/${options.repo}`, event, null, '操作')
         })
-    bot.after('ready', async () => {
+    bot.on('after-ready', async () => {
         const channels = await bot.database.get('Group')
         for (const channel of channels) {
             const { github_webhooks,group_id }=channel.toJSON()

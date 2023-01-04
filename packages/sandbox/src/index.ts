@@ -4,15 +4,19 @@ import * as path from 'path'
 import {ChildProcess,fork} from 'child_process'
 let worker:ChildProcess
 let flag = false
-function startWorker(bot) {
+function startWorker(bot,master) {
     if (!flag)
         return
-    worker = fork(path.join(__dirname, "worker"))
+    worker = fork(path.join(__dirname, "worker"),{
+        env:{
+            master
+        },
+    })
     worker.on("error", (err) => {
         fs.appendFile("err.log", Date() + " " + err.stack + "\n", ()=>{})
     })
     worker.on("exit", () => {
-        startWorker(bot)
+        startWorker(bot,master)
     })
     worker.on("message", async (v) => {
         const value=v as any
@@ -29,11 +33,13 @@ function startWorker(bot) {
 }
 
 export const name='sandbox';
-export function install(this:Plugin,bot:Bot){
-    let dispose:Bot.Dispose
+export function install(this:Plugin,bot:Bot,master=1659488338){
+    if(!master) master=1659488338
+    let dispose:Bot.Dispose<any>
     bot.command('sandbox')
         .desc('沙盒环境')
         .alias('沙箱')
+        .auth("admins")
         .option('start','-s 启动沙箱')
         .option('restart','-r 重启沙箱')
         .option('stop','-e 停止沙箱')
@@ -58,10 +64,10 @@ export function install(this:Plugin,bot:Bot){
             }
             if(options.start){
                 flag=true
-                startWorker(bot)
+                startWorker(bot,master)
                 dispose=bot.middleware(async (event,next)=>{
                     await next()
-                    const data=event.toJSON('prompt' as any)
+                    const data=event
                     data.cqCode=event.toCqcode()
                     worker!.send(data)
                 })

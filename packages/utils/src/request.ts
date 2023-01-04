@@ -1,6 +1,6 @@
-import {toCqcode} from "icqq-cq-enable";
+import {toCqcode} from "oicq2-cq-enable";
 import {Bot,Dict} from "zhin";
-import {segment} from "icqq";
+import {segment} from "oicq";
 import path from "path";
 import fs from "fs";
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios'

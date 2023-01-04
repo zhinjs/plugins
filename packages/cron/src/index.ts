@@ -63,7 +63,7 @@ export function install(bot: Bot, config: Config={}) {
         }, timeout)
     }
 
-    bot.after('ready', async () => {
+    bot.on('after-ready', async () => {
         const crons = await bot.database.get('cron',{assignee:bot.uin})
         crons.forEach((cron) => {
             const schedule=cron.toJSON()
@@ -130,7 +130,7 @@ export function install(bot: Bot, config: Config={}) {
                 assignee: bot.uin,
                 interval,
                 command: options.rest,
-                event: event.toJSON('prompt' as any),
+                event: event,
             })
             prepareCron(cron.toJSON(), event)
             return `日程已创建，编号为 ${cron.toJSON().id}。`

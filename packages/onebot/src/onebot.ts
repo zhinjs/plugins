@@ -1,5 +1,5 @@
 import * as fs from 'fs'
-import {fromCqcode,toCqcode,fromSegment,toSegment} from 'icqq-cq-enable'
+import {fromCqcode,toCqcode,fromSegment,toSegment} from 'oicq2-cq-enable'
 import http from "http"
 import https from "https"
 import {URL} from "url"
@@ -7,7 +7,7 @@ import {WebSocketServer, WebSocket} from "ws"
 import {assert} from "./filter"
 import {toHump, transNotice, APIS, ARGS, toBool, BOOLS, genMetaEvent} from "./static"
 import {OneBotConfig, defaultOneBotConfig} from "./config"
-import {Client} from "icqq";
+import {Client} from "oicq";
 import {Bot} from "zhin";
 import '@zhinjs/plugin-http'
 interface OneBotProtocol {

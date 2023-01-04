@@ -1,7 +1,7 @@
 import {Bot,Plugin} from "zhin";
 import {Chess} from "./chess";
-import {GroupMessageEvent} from "icqq/lib/events";
-import {segment} from "icqq";
+import {GroupMessageEvent} from "oicq/lib/events";
+import {segment} from "oicq";
 export function install(this:Plugin,bot:Bot){
     bot.middleware(async (msg,next)=>{
         if(msg.message_type!=='group') return next()

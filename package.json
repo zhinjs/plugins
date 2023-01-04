@@ -42,10 +42,10 @@
     "kleur": "^4.1.5",
     "semver": "^7.3.7",
     "typescript": "^4.7.4",
-    "zhin": "^1.1.56"
+    "zhin": "^1.2.15"
   },
   "dependencies": {
-    "icqq": "^0.0.6",
-    "latest-version": "^5.1.0"
+    "latest-version": "^5.1.0",
+    "oicq": "^2.3.1"
   }
 }

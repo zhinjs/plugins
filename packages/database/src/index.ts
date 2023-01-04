@@ -28,7 +28,7 @@ declare module 'zhin' {
         }
     }
 }
-declare module 'icqq'{
+declare module 'oicq'{
     interface User extends UserTable.Types{}
     interface Group extends GroupTable.Types{}
     interface Discuss extends GroupTable.Types{}
@@ -50,12 +50,12 @@ export class Database {
         this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
         this.define('User', UserTable.model)
         this.define('Group', GroupTable.model)
-        this.bot.before('ready',()=>{
+        this.bot.on('before-ready',()=>{
             Object.entries(this.modelDecl).forEach(([name, decl]) => {
                 this.sequelize.define(name, decl,{timestamps:false})
             })
         })
-        this.bot.after('ready',async ()=>{
+        this.bot.on('after-ready',async ()=>{
             await this.sequelize.sync({alter: true})
             this.connect()
         })
@@ -81,7 +81,7 @@ export class Database {
         return this.model(modelName).destroy({where:condition})
     }
     connect() {
-        this.bot.before('message', async (message) => {
+        this.bot.on('before-message', async (message) => {
             const {sender: {nickname, user_id}} = message
             const [userInfo] = await this.models.User.findOrCreate({
                 where: {

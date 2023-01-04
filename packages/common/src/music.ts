@@ -1,5 +1,5 @@
 import {Bot} from "zhin";
-import {MusicPlatform} from 'icqq'
+import {MusicPlatform} from 'oicq'
 import {default as axios} from 'axios'
 import * as qs from 'querystring'
 import * as lodash from 'lodash'

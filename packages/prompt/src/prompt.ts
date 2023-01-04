@@ -1,5 +1,5 @@
 import {Bot, Dict} from "zhin";
-import {Sendable} from 'icqq'
+import {Sendable} from 'oicq'
 
 export class Prompt{
     private fullChannelId:string
@@ -10,8 +10,7 @@ export class Prompt{
         let result:Prompt.ResultS<O>={} as Prompt.ResultS<O>
         const names=Object.keys(options)
         for(const name of names){
-            // @ts-ignore
-            result[name as keyof O]=await this[options[name].type](options[name].message,options[name])
+            result[name as keyof O]=await this[options[name].type as any](options[name].message,options[name])
         }
         return result
     }
@@ -86,7 +85,7 @@ export class Prompt{
             initial:config.initial||[],
             child_type:config.child_type,
             format(event){
-                return Prompt.transforms['list'][config.type](event,config.separator||',')
+                return Prompt.transforms['list'][config.child_type](event,config.separator||',')
             }
         })
     }

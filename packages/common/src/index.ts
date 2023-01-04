@@ -1,28 +1,22 @@
 import {Bot, toJSON} from "zhin";
-import {toCqcode,fromCqcode} from 'icqq-cq-enable'
-import {segment,Member,Friend,Group,Discuss,Forwardable} from 'icqq'
-import {genGroupMessageId,genDmMessageId} from 'icqq/lib/message'
+import {toCqcode,fromCqcode} from 'oicq2-cq-enable'
+import {segment, Member, Friend, Group, Discuss, Forwardable, parseGroupMessageId, parseDmMessageId} from 'oicq'
+import {genDmMessageId} from 'oicq/lib/message'
 import * as music from './music'
 import '@zhinjs/plugin-prompt'
 export interface RecallConfig {
     recall?: number
 }
-
 export interface Respondent {
     match: string | RegExp
     reply: string | ((...capture: string[]) => string)
 }
-function getChannelId(event){
-    return [event.message_type,event.group_id||event.discuss_id||event.user_id].join(':')
-}
 export interface BasicConfig extends RecallConfig {
     echo?: boolean
     send?: boolean
-    github?: boolean
     feedback?: number | number[]
     respondent?: Respondent | Respondent[]
 }
-
 export function echo(bot: Bot) {
     bot.command('common/echo <varName:string>')
         .desc('输出当前会话中的变量值')
@@ -75,10 +69,16 @@ export function send(bot: Bot) {
 }
 
 export function recall(bot: Bot, {recall = 10}: RecallConfig) {
-    const recent: Record<string, string[]> = {}
-    bot.on('message.send.success', (messageRet, channelId) => {
-        const list = recent[channelId] ||= []
-        list.unshift(messageRet.message_id)
+    const recent: Record<number, string[]> = {}
+    bot.on('send', ({message_id}) => {
+        let target_id:number
+        if(message_id.length>24){
+            target_id=parseGroupMessageId(message_id).group_id
+        }else{
+            target_id=parseDmMessageId(message_id).user_id
+        }
+        const list = recent[target_id] ||= []
+        list.unshift(message_id)
         if (list.length > recall) {
             list.pop()
         }
@@ -87,10 +87,11 @@ export function recall(bot: Bot, {recall = 10}: RecallConfig) {
         .command('common/recall [count:number]')
         .desc('撤回机器人发送的消息')
         .action(async ({event}, count = 1) => {
-            const list = recent[getChannelId(event)] ||= []
+            let target_id:number=event['group_id']||event.sender.user_id
+            const list = recent[target_id] ||= []
             if (!list.length) return '近期没有发送消息。'
             const removal = list.splice(0, count)
-            if (!list.length) delete recent[getChannelId(event)]
+            if (!list.length) delete recent[target_id]
             for (let index = 0; index < removal.length; index++) {
                 try {
                     await bot.deleteMsg(removal[index])
@@ -105,23 +106,11 @@ export function recall(bot: Bot, {recall = 10}: RecallConfig) {
 export function feedback(bot: Bot, {
     operators
 }: { operators: number[]}) {
-    async function createReplyCallback(bot:Bot,event1:Bot.MessageEvent, user_id:number) {
+    async function createReplyCallback(bot:Bot,event1:Bot.MessageEvent,message_id, user_id:number) {
         const dispose=bot.middleware((event2,next)=>{
             if(event2.source && event2.sender.user_id===user_id){
-                switch (event2.message_type){
-                    case "private":{
-                        if(genDmMessageId(event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time) !==event1.message_id) return next()
-                        break;
-                    }
-                    case "group":{
-                        if(genGroupMessageId(event2['group_id'],event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time) !==event1.message_id) return next()
-                        break;
-                    }
-                    case "discuss":{
-                        if(genGroupMessageId(event2['discuss_id'],event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time) !==event1.message_id) return next()
-                        break;
-                    }
-                }
+                const sourceMessageId=genDmMessageId(event2.sender.user_id,event2.source.seq,event2.source.rand,event2.source.time,1)
+                if(sourceMessageId !==message_id) return next()
                 event1.reply(['来自作者的回复：\n', ...event2.message], true)
                 dispose()
             }
@@ -143,8 +132,8 @@ export function feedback(bot: Bot, {
             const message = `收到来自${fromCN[event.message_type]()}的消息：\n${text}`
             for (let index = 0; index < operators.length; ++index) {
                 const user_id = operators[index]
-                await bot.sendPrivateMsg(user_id, message)
-                createReplyCallback(bot,event, user_id)
+                const {message_id}=await bot.sendPrivateMsg(user_id, message)
+                createReplyCallback(bot,event,message_id, user_id)
             }
             return '反馈成功'
         })
@@ -167,24 +156,11 @@ export function basic(bot: Bot, config: BasicConfig = {feedback: []}) {
     if (config.send !== false) bot.plugin(send)
     if (!(config.recall <= 0)) bot.plugin(recall, config)
 
-
     const operators = [].concat(config.feedback).filter(Boolean).map(op => Number(op))
     if (operators.length) bot.plugin(feedback, {operators})
 
     const respondents = [].concat(config.respondent).filter(Boolean)
     if (respondents.length) bot.plugin(respondent, respondents)
-}
-
-export function github(bot: Bot) {
-    bot.middleware(async (event,next) => {
-        await next()
-        const mathReg = /(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
-        const match = event.toCqcode().match(mathReg)
-        if (!match) return
-        const [, owner, repo] = match
-        const url = `https://opengraph.github.com/repo/${owner}/${repo}`
-        event.reply(segment.image(url))
-    })
 }
 
 export interface Config extends BasicConfig {
@@ -205,13 +181,15 @@ export function install(bot: Bot, config: Config={}) {
         .desc('基础功能')
     bot.command('common/segment')
         .desc('生成指定消息段内容')
-    if (config && config.github !== false) bot.plugin(github)
     bot.command('common/segment/face <id:integer>')
         .desc('发送一个表情')
         .action((_, id) => segment.face(id))
     bot.command('common/segment/image <file>')
         .desc('发送一个一张图片')
         .action((_, file) => segment.image(file))
+    bot.command('common/segment/json <json:text>')
+        .desc('发送json卡片')
+        .action((_,json)=>segment.json(json))
     bot.command('common/segment/at <qq:integer>')
         .desc('发送at')
         .action((_, at) => segment.at(at))
@@ -260,17 +238,25 @@ export function install(bot: Bot, config: Config={}) {
             }
             return await bot.makeForwardMsg(messageArr)
         })
+    function findCommand(str){
+        const firstIdx=str.indexOf('$(')
+        const lastIdx=str.indexOf(')')
+        const command=str.slice(firstIdx+2,lastIdx)
+        if(command.includes('$(')){
+            return findCommand(command+')')
+        }
+        return command
+    }
     async function executeTemplate(this:Bot.MessageEvent,template:string):Promise<string>{
         template = template.replace(/\$A/g, `[CQ:at,qq=all]`)
             .replace(/\$a/g, `[CQ:at,qq=${this.user_id}]`)
             .replace(/\$m/g, `[CQ:at,qq=${bot.uin}]`)
             .replace(/\$s/g, () => this.sender['card'] || this.sender['title'] || this.sender.nickname);
         while (template.match(/\$\(.*\)/)) {
-            const text = /\$\((.*)\)/.exec(template)[1];
-            const executeResult = await executeTemplate.call(this,text);
-            console.log('exec',text,executeResult);
+            const command=findCommand(template)
+            const executeResult = await executeTemplate.call(this,command);
             if (executeResult && typeof executeResult!=='boolean') {
-                template = template.replace(/\$\((.*)\)/, executeResult);
+                template = template.replace(`$(${command})`, executeResult);
             }
         }
         const result = await bot.executeCommand(this,template);

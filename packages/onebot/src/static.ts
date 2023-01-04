@@ -1,4 +1,4 @@
-import {Client} from "icqq";
+import {Client} from "oicq";
 
 const besides=['constructor','online_status','log_level','bkn','stat','login','logout','em','emit']
 export const APIS=Reflect.ownKeys(Client.prototype).filter(key=>typeof key==='string' && !besides.includes(key)&& !key.startsWith('_')

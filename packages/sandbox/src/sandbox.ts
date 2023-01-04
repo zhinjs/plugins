@@ -2,8 +2,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as zlib from 'zlib'
 import * as vm from 'vm'
-import {createCanvas,loadImage,registerFont} from 'canvas'
-import {segment} from "icqq";
+import {segment} from "oicq";
 
 const dataPath = path.join(__dirname, "./")
 const contextFile = path.join(dataPath, "context")
@@ -83,9 +82,6 @@ export class Sandbox {
         this.include("assert", require("assert"))
         this.include("querystring", require("querystring"))
         this.include("path", require("path"))
-        this.include('createCanvas',createCanvas)
-        this.include('loadImage',loadImage)
-        this.include('registerFont',registerFont)
         this.include("zip", require("zlib").deflateSync)
         this.include("unzip", require("zlib").unzipSync)
         this.include("os", require("os"))

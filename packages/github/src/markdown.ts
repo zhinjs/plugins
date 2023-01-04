@@ -1,5 +1,5 @@
-import { toCqcode } from 'icqq-cq-enable'
-import {segment} from 'icqq'
+import { toCqcode } from 'oicq2-cq-enable'
+import {segment} from 'oicq'
 import { marked } from 'marked'
 
 declare module 'marked' {

@@ -1,6 +1,6 @@
 import {Dialogue} from './teach'
-import {Bot, Plugin} from "zhin";
-import {fromCqcode} from "icqq/lib/message/cqCode";
+import {Bot} from "zhin";
+import {fromCqcode} from "oicq2-cq-enable";
 
 function hasEnv(envs, type, target) {
     return envs.length === 0 || envs.some(item => {

@@ -11,6 +11,7 @@ const categories = [
 ]
 const coreLib=[
     'http',
+    "prompt",
     'console',
     'database',
     'client'

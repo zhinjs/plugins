@@ -45,24 +45,6 @@
           </template>
         </el-input>
       </el-form-item>
-      <el-form-item prop="config" label="icqq配置">
-        <el-form :model="bot.config" class="sub-form">
-          <el-form-item v-for="([key,value],idx) in Object.entries(bot.config)"
-                        :key="key+idx"
-                        :prop="key" :label="key"
-          >
-            <el-input v-if="typeof value==='string'" v-model="bot.config[key]"/>
-            <el-checkbox v-else-if="typeof value==='boolean'" v-model="bot.config[key]"/>
-            <el-input-number v-else-if="typeof value==='number'" v-model="bot.config[key]"/>
-            <el-select allow-create filterable v-else-if="Array.isArray(value)" multiple v-model="bot.config[key]"/>
-            <el-button type="danger" size="small" style="display:inline-block;margin-left: 8px" icon="close" circle
-                       @click="delete bot.config[key]"/>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="createOicqConfig">新增一行配置</el-button>
-          </el-form-item>
-        </el-form>
-      </el-form-item>
     </el-form>
   </div>
 </template>

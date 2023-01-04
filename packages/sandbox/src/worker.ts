@@ -1,4 +1,4 @@
-import {fromCqcode} from "icqq-cq-enable";
+import {fromCqcode} from "oicq2-cq-enable";
 import stringify from 'string.ify'
 import {Sandbox} from "./sandbox";
 import {Dict} from "zhin";
@@ -17,7 +17,7 @@ const stringify_config = stringify.configure({
     fancy:           false,
     indentation:     ' ',
 })
-const sandbox = new Sandbox(1659488338)
+const sandbox = new Sandbox(Number(process.env.master))
 
 process.on("disconnect", process.exit)
 process.on("message", async (value:Dict) => {

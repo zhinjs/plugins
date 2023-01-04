@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-prompt",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "description": "prompt service",
   "repository": {
     "type": "git",

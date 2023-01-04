@@ -52,7 +52,7 @@ export class BotService extends DataService<Dict<BotService.Data>> {
     constructor(public plugin: Plugin,bot:Bot) {
         super(bot, 'bot', { authority: 4 })
 
-        bot.before('send', (session) => {
+        bot.on('before-send', (session) => {
             bot._messageSent.add(1)
         })
 
@@ -78,7 +78,7 @@ export class BotService extends DataService<Dict<BotService.Data>> {
 
         this.extend((bot) => {
             return {
-                ...pick(bot['client'], ['uin', 'nickname', 'status']),
+                ...pick(bot, ['uin', 'nickname', 'status']),
                 config: bot.config,
                 messageSent: bot._messageSent.get(),
                 messageReceived: bot._messageReceived.get(),

@@ -1,8 +1,8 @@
 import {Canvas, createCanvas, registerFont} from "canvas";
-import {segment} from "icqq";
+import {segment} from "oicq";
 import {resolve} from 'path'
 import {History, Option, Pos} from "./types";
-import {GroupMessageEvent} from 'icqq/lib/events'
+import {GroupMessageEvent} from 'oicq/lib/events'
 import './extend'
 import {CampType, PieceType} from './enum'
 import {Board} from './board'

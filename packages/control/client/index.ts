@@ -38,6 +38,14 @@ export default defineExtension((ctx:Context)=>{
         position:'left',
         component:()=>import('./pages/bot.vue')
     })
+    ctx.addPage({
+        path:'/plugins',
+        name:'插件管理',
+        icon:'tools',
+        fields:['plugins'],
+        position:'left',
+        component:()=>import('./pages/plugins.vue')
+    })
     ctx.addToolkit({
         name: '用户资料',
         icon: 'user',

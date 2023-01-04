@@ -1,9 +1,9 @@
 import {Bot,Dict} from "zhin";
 import {DataTypes} from "sequelize";
-import {fromCqcode} from 'icqq-cq-enable'
+import {fromCqcode} from 'oicq2-cq-enable'
 import { Method } from 'axios'
 import {Request} from "@zhinjs/plugin-utils";
-import {GroupMessageEvent} from 'icqq/'
+import {GroupMessageEvent} from 'oicq'
 import {GithubTable} from "./models/github";
 import {EventConfig} from './events'
 import '@zhinjs/plugin-prompt'

@@ -1,5 +1,5 @@
 import {Bot} from "zhin";
-import{core} from 'icqq'
+import {core} from 'oicq'
 export const name='groupAdmin'
 import '@zhinjs/plugin-prompt'
 export function install(ctx: Bot) {
@@ -13,7 +13,7 @@ export function install(ctx: Bot) {
                 "3": 0,
                 "4": {
                     "2": {
-                        "1": `${ctx.uin}`,
+                        "1": `${event.sender.user_id}`,
                         "2": `${event.group_id}`,
                         "3": ctx.apk.ver
                     }
@@ -22,7 +22,7 @@ export function install(ctx: Bot) {
                 "6": "616E64726F696420382E362E30"
             })).then(res=>{
                 const strArr=res.toString().match(/[\w\d\s\u4e00-\u9fa5"',，.。/、\]\[【】\\n\s！!?？——_<>%;‘’；)《（）》(&+=`“”·*#@@]/g)||[]
-                return strArr.join('')
+                return strArr.join('').trim().split('http')[0]
             })
         )
     ctx.command('admin/group/quit','group')
