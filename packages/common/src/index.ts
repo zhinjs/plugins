@@ -257,7 +257,7 @@ export function install(bot: Bot, config: Config={}) {
             const text = /\$\((.*)\)/.exec(template)[1];
             const executeResult = await executeTemplate.call(this,text);
             if (executeResult && typeof executeResult!=='boolean') {
-                template = template.replace(`$(${command})`, executeResult);
+                template = template.replace(`$(${text})`, executeResult);
             }
         }
         const result = await bot.executeCommand(this,template);
