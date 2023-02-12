@@ -1,9 +1,7 @@
-import {Bot,Dict} from "zhin";
+import {Context, Dict, Session, h, Schema} from "zhin";
 import {DataTypes} from "sequelize";
-import {fromCqcode} from 'oicq2-cq-enable'
 import { Method } from 'axios'
 import {Request} from "@zhinjs/plugin-utils";
-import {GroupMessageEvent} from 'oicq'
 import {GithubTable} from "./models/github";
 import {EventConfig} from './events'
 import '@zhinjs/plugin-prompt'
@@ -32,16 +30,29 @@ export interface OAuth {
     token_type: string
     scope: string
 }
+declare module '@zhinjs/plugin-database'{
+    namespace GroupTable{
+        interface Types{
+            github_webhooks:Dict<EventConfig>
+        }
+    }
+    namespace UserTable{
+        interface Types{
+            github_accessToken:string
+            github_refreshToken:string
+        }
+    }
+}
 export class GitHub{
     public history: Dict<ReplyPayloads> = Object.create(null)
     private http: Request
-    constructor(public bot:Bot,public config:Config) {
-        this.http=bot.axios.extend({})
-        bot.database.extend('User',{
+    constructor(public ctx:Context,public config:Config) {
+        this.http=ctx.axios.extend({})
+        ctx.database.extend('User',{
             github_accessToken:DataTypes.STRING,
             github_refreshToken:DataTypes.STRING
         })
-        bot.database.extend('Group',{
+        ctx.database.extend('Group',{
             github_webhooks:{
                 type:DataTypes.TEXT,
                 get():Dict<EventConfig> {
@@ -53,7 +64,7 @@ export class GitHub{
             }
 
         })
-        bot.database.define('github',GithubTable.model)
+        ctx.database.define('github',GithubTable.model)
     }
     async getTokens(params: any) {
         return this.http.post<OAuth>('https://github.com/login/oauth/access_token', {}, {
@@ -66,50 +77,50 @@ export class GitHub{
             timeout: this.config.requestTimeout,
         })
     }
-    private async _request(method: Method, url: string, replyMsg: GroupMessageEvent, data?: any, headers?: Dict) {
-        this.bot.logger.debug(method, url, data)
+    private async _request(method: Method, url: string, replyMsg: Session, data?: any, headers?: Dict) {
+        this.ctx.logger.debug(method, url, data)
         return this.http(method, url, {
             data,
             headers: {
                 accept: 'application/vnd.github.v3+json',
-                authorization: `token ${replyMsg.member.github_accessToken}`,
+                authorization: `token ${replyMsg.user.github_accessToken}`,
                 ...headers,
             },
             timeout: this.config.requestTimeout,
         })
     }
-    async authorize(event: GroupMessageEvent, message: string) {
-        const name = await event.prompt.text(message)
+    async authorize(session: Session, message: string) {
+        const name = await session.prompt.text(message)
         if (name) {
-            await this.bot.execute({ name: 'github.authorize',event, args: [name] })
+            await session.execute({ name: 'github.authorize',session:session as any, args: [name] })
         } else {
-            await event.reply('输入超时')
+            await session.reply('输入超时')
         }
     }
-    async request(method: Method, url: string, event: Bot.MessageEvent, body?: any, headers?: Dict) {
-        if(event.message_type!=='group') return '只能在群聊中使用'
-        if (!event.member.github_accessToken) {
-            return this.authorize(event, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
+    async request(method: Method, url: string, session:Session, body?: any, headers?: Dict) {
+        if(session.detail_type!=='group') return '只能在群聊中使用'
+        if (!session.user.github_accessToken) {
+            return this.authorize(session, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
         }
 
         try {
-            return await this._request(method, url, event, body, headers)
+            return await this._request(method, url, session, body, headers)
         } catch (error) {
             if (error.response?.status !== 401) throw error
         }
 
         try {
             const data = await this.getTokens({
-                refresh_token: event.member.github_refreshToken,
+                refresh_token: session.user.github_refreshToken,
                 grant_type: 'refresh_token',
             })
-            event.member.github_accessToken = data.access_token
-            event.member.github_refreshToken = data.refresh_token
+            session.user.github_accessToken = data.access_token
+            session.user.github_refreshToken = data.refresh_token
         } catch {
-            return this.authorize(event, '令牌已失效，需要重新授权。输入你的 GitHub 用户名。')
+            return this.authorize(session, '令牌已失效，需要重新授权。输入你的 GitHub 用户名。')
         }
 
-        return await this._request(method, url, event, body, headers)
+        return await this._request(method, url, session, body, headers)
     }
 }
 export interface Config {
@@ -122,12 +133,22 @@ export interface Config {
     replyTimeout?: number
     requestTimeout?: number
 }
+export const Config=Schema.object({
+    path:Schema.string().description('webhook路径').default('/github'),
+    appId:Schema.string().description('Github AppId').required(true),
+    appSecret:Schema.string().description('Github AppSecret').required(true),
+    messagePrefix:Schema.string().description('消息前缀'),
+    redirect:Schema.string().description('请求回调地址').default('/redirect'),
+    promptTimeout:Schema.string().description('会话超时时间'),
+    replyTimeout:Schema.string().description('回复超时时间'),
+    requestTimeout:Schema.string().description('请求超时时间'),
+})
 export class ReplyHandler {
-    constructor(public github: GitHub, public botEvent: Bot.MessageEvent, public content?: string) {}
+    constructor(public github: GitHub, public ctxEvent: Session, public content?: string) {}
 
     async request(method: Method, url: string, message: string, body?: any, headers?: Dict) {
         try {
-            await this.github.request(method, url, this.botEvent, body, headers)
+            await this.github.request(method, url, this.ctxEvent, body, headers)
         } catch (err) {
             return message
         }
@@ -146,7 +167,7 @@ export class ReplyHandler {
     }
 
     async transform(source: string) {
-        const [{type,url,text}]=fromCqcode(source)
+        const [{type,attrs:{url,text}}]=h.parse(source)
         return type!=='image'?text:`![${text}](${url})`
     }
 

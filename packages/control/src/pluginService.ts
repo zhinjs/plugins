@@ -1,5 +1,5 @@
 import {DataService} from "@zhinjs/plugin-console";
-import {Bot} from "zhin";
+import {Context} from "zhin";
 declare module '@zhinjs/plugin-console'{
     namespace Console{
         interface Services{
@@ -8,8 +8,8 @@ declare module '@zhinjs/plugin-console'{
     }
 }
 export class PluginService extends DataService<PluginService.Config>{
-    constructor(public plugin:Plugin,bot:Bot,private config:PluginService.Config={}) {
-        super(bot,'plugins');
+    constructor(public plugin:Plugin,ctx:Context,private config:PluginService.Config={}) {
+        super(ctx,'plugins');
     }
 }
 export namespace PluginService{

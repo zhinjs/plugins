@@ -1,14 +1,14 @@
-import {Awaitable, Plugin, Dict, Bot} from 'zhin'
+import {Awaitable, Plugin, Dict, Context} from 'zhin'
 import { v4 } from 'uuid'
 import {WebSocket,WebSocketServer} from 'ws'
 import { DataService } from './service'
 import '@zhinjs/plugin-http'
 export class SocketHandle {
-    readonly bot: Bot
+    readonly ctx: Context
     readonly id: string = v4()
 
     constructor(service: WsService, public socket: WebSocket) {
-        this.bot = service.bot
+        this.ctx = service.ctx
         this.refresh()
     }
 
@@ -17,8 +17,8 @@ export class SocketHandle {
     }
 
     refresh() {
-        Object.keys(this.bot['services']).forEach(async (name) => {
-            const service = this.bot[name] as DataService
+        Object.keys(this.ctx['services']).forEach(async (name) => {
+            const service = this.ctx[name] as DataService
             if (!name.startsWith('console.') || !service) return
             const key = name.slice(8)
             const value = await service.get()
@@ -41,7 +41,7 @@ class WsService extends DataService {
     readonly listeners: Dict<Listener> = {}
     readonly layer: WebSocketServer
 
-    constructor(public plugin:Plugin,bot: Bot, private config: WsService.Config) {
+    constructor(public plugin:Plugin,bot: Context, private config: WsService.Config) {
         super(bot, 'ws')
 
         this.layer = bot.router.ws('/'+config.apiPath)

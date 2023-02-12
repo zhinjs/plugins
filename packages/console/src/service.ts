@@ -1,4 +1,4 @@
-import {Awaitable, Bot} from 'zhin'
+import {Awaitable, Context} from 'zhin'
 import {Console} from './index'
 
 export namespace DataService {
@@ -12,7 +12,7 @@ export abstract class DataService<T = never> {
         return null
     }
 
-    constructor(public bot: Bot, protected key: keyof Console.Services, public options: DataService.Options = {}) {
+    constructor(public ctx: Context, protected key: keyof Console.Services, public options: DataService.Options = {}) {
     }
 
     start() {
@@ -20,7 +20,7 @@ export abstract class DataService<T = never> {
     }
 
     protected broadcast(type: string, value: any) {
-        this.bot.console?.ws.broadcast(type, { key: this.key, value }, this.options)
+        this.ctx.console?.ws.broadcast(type, { key: this.key, value }, this.options)
     }
 
     async refresh() {

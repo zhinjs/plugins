@@ -1,8 +1,8 @@
-import {Bot} from "zhin";
+import {Context} from "zhin";
 import * as random from './random'
 export const name='math'
-export function install(bot:Bot) {
-    const p=bot.command('utils/math')
+export function install(ctx:Context) {
+    const p=ctx.command('utils/math')
         .desc('数学计算工具')
     p.subcommand('math.max <...nums:number>')
         .desc('返回nums中的最大值')
@@ -69,5 +69,5 @@ export function install(bot:Bot) {
         .action((_,num)=>{
             return Math.tan(num).toString()
         })
-    bot.plugin(random)
+    ctx.plugin(random)
 }

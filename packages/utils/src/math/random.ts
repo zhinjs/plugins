@@ -1,8 +1,8 @@
 import {Random} from "zhin";
-import {Bot} from "zhin";
+import {Context} from "zhin";
 export const name='random'
-export function install(bot:Bot){
-    const p=bot.command('utils/math/math.random')
+export function install(ctx:Context){
+    const p=ctx.command('utils/math/math.random')
         .desc('随机数计算')
         .action(()=>{
             return Math.random().toString()

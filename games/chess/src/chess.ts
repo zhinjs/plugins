@@ -1,14 +1,13 @@
 import {Canvas, createCanvas, registerFont} from "canvas";
-import {segment} from "oicq";
 import {resolve} from 'path'
 import {History, Option, Pos} from "./types";
-import {GroupMessageEvent} from 'oicq/lib/events'
 import './extend'
 import {CampType, PieceType} from './enum'
 import {Board} from './board'
 import {Piece} from './piece'
 import {Rule} from './rule';
 import {Tip} from "./tip";
+import {Zhin, NSession,h} from "zhin";
 
 registerFont(resolve(__dirname,'./fonts/楷体.ttf'),{family:'楷体'})
 /**象棋类 */
@@ -26,9 +25,9 @@ class Chess {
 	private camp: CampType = CampType.RED;
 	tips:Tip[]=[]
 	history:History[]=[]
-	static rooms:Map<number,Chess>=new Map<number, Chess>()
-	public players:Map<number,CampType>=new Map<number,CampType>()
-	constructor(public group_id:number,user_id:number) {
+	static rooms:Map<number|string,Chess>=new Map<number|string, Chess>()
+	public players:Map<number|string,CampType>=new Map<number|string,CampType>()
+	constructor(public group_id:number|string,user_id:number|string) {
 		if(Chess.rooms.get(group_id)) throw new Error('当前群聊已有对局，请等待对局结束后继续')
 		this.initDefaults();
 		this.options = { ...this.defaults };
@@ -41,17 +40,17 @@ class Chess {
 		Chess.rooms.set(group_id,this)
 	}
 	// 创建房间
-	static createRoom(group_id:number,user_id:number){
+	static createRoom(group_id:number|string,user_id:number|string){
 		return new Chess(group_id,user_id)
 	}
 	// 加入房间
-	static joinRoom(group_id:number,user_id:number){
+	static joinRoom(group_id:number|string,user_id:number|string){
 		const room=Chess.rooms.get(group_id)
 		if(!room) throw new Error('当前群聊没有开启象棋对局，无法加入')
 		room.join(user_id)
 	}
 	// 关闭房间
-	static closeRoom(group_id:number){
+	static closeRoom(group_id:number|string){
 		const room=Chess.rooms.get(group_id)
 		if(!room) throw new Error('当前群聊没有开启象棋对局，无法结束')
 		Chess.rooms.delete(group_id)
@@ -113,10 +112,10 @@ class Chess {
 		return new Error('落子错误:'+msg)
 	}
 	// 提示棋子
-	static tips(message:GroupMessageEvent,input){
-		const chess=Chess.rooms.get(message.group_id)
+	static tips(session:NSession<keyof Zhin.Adapters,'message.group'>,input){
+		const chess=Chess.rooms.get(session.group_id)
 		if(!chess) return '当前没有对局'
-		const camp=chess.players.get(message.sender.user_id)
+		const camp=chess.players.get(session.sender.user_id)
 		if(!camp) return '你下棋必被指指点点'
 		input=Chess.formatInput(camp,input)
 		const piece=chess.pickPiece(camp,input.split(''))
@@ -128,9 +127,8 @@ class Chess {
 		const canMovePos=this.rule.getPieceCanMovePos(piece)
 		this.tips=canMovePos.map(pos=>new Tip(this.board.cellSize,pos))
 		this.invalidate()
-		const result= segment.image(this.canvas.toBuffer("image/jpeg"))
 		this.tips=[]
-		return result
+		return h('image',{src:this.canvas.toBuffer("image/jpeg")})
 	}
 	// 解析移动的哪个棋子
 	public pickPiece(campType:CampType,input:[string,string]):Piece|undefined{
@@ -230,7 +228,7 @@ class Chess {
 			}
 		}else throw Chess.createToError('不支持的行棋方式')
 	}
-	static input(message:GroupMessageEvent){
+	static input(message:NSession<'icqq','message.group'>){
 		if(!Chess.rooms.get(message.group_id)) return
 		if(message.raw_message.length!==4)return
 		const chess=Chess.rooms.get(message.group_id)
@@ -240,7 +238,7 @@ class Chess {
 			if(chess.players.size===1){
 				chess.join(message.sender.user_id)
 			}else{
-				message.reply('你下棋必被指指点点',true)
+				message.reply('你下棋必被指指点点')
 			}
 		}
 		const [a,b,c,d]=inputArr
@@ -310,7 +308,7 @@ class Chess {
 	isCurrentCampPiece(piece:Piece){
 		return piece && piece.campType === this.camp
 	}
-	revert(event:GroupMessageEvent){
+	revert(event:NSession<'icqq','message.group'>){
 		if(!this.players.get(event.sender.user_id)) return '你下棋必被指指点点'
 		if(!this.history.length) return '棋局未开始'
 		if(this.players.get(event.sender.user_id)===this.camp) return '你的操作已被对手覆盖，无法悔棋'
@@ -334,10 +332,10 @@ class Chess {
 				`第${this.history.length+1}手，${this.camp}走`,
 				'当前棋局',
 			].filter(Boolean).join('\n'),
-			segment.image(this.canvas.toBuffer("image/jpeg"))
+			h('image',{src:this.canvas.toBuffer("image/jpeg")})
 		]
 	}
-	join(user_id:number){
+	join(user_id:number|string){
 		if(this.players.size>1) throw new Error('该对局棋手已满')
 		this.players.set(user_id,[...this.players.values()].find(a=>a===CampType.RED)?CampType.BLACK:CampType.RED)
 	}

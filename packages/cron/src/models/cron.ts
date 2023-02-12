@@ -1,6 +1,7 @@
-import {Bot, Dict} from "zhin";
+import {Context} from "zhin";
 import {DataTypes} from 'sequelize'
 import {TableDecl} from "@zhinjs/plugin-database";
+import {Session} from "zhin";
 
 export namespace CronTable{
     export interface Types{
@@ -16,13 +17,13 @@ export namespace CronTable{
         lastCall:DataTypes.DATE,
         interval:DataTypes.INTEGER,
         command:DataTypes.TEXT,
-        event:{
+        session:{
             type:DataTypes.TEXT,
             get(){
-                return JSON.parse(this.getDataValue('event')) as Bot.MessageEvent
+                return JSON.parse(this.getDataValue('session')) as Session
             },
-            set(event:Bot.MessageEvent){
-                this.setDataValue('event',JSON.stringify(event))
+            set(event:Session){
+                this.setDataValue('session',JSON.stringify(event))
             }
         }
     }

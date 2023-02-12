@@ -22,8 +22,8 @@ export type Store = {
     [K in keyof Console.Services]?: Console.Services[K] extends DataService<infer T> ? T : never
 }
 
-declare const oitq_config: ClientConfig
-export const config=oitq_config
+declare const zhin_config: ClientConfig
+export const config=zhin_config
 export const store = reactive<Store>({})
 
 export const socket = ref<WebSocket>(null)

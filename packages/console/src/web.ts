@@ -1,4 +1,4 @@
-import {Plugin, Dict, Bot} from 'zhin'
+import {Plugin, Dict, Context} from 'zhin'
 import { dirname, extname, resolve } from 'path'
 import { createReadStream, existsSync, promises as fsp, Stats } from 'fs'
 import {createServer} from "vite";
@@ -14,8 +14,8 @@ class WebService extends DataService<string[]> {
     root:string
     private isStarted:boolean=false
 
-    constructor(public plugin:Plugin,bot: Bot, private config: WebService.Config) {
-        super(bot, 'web')
+    constructor(public plugin:Plugin,ctx: Context, private config: WebService.Config) {
+        super(ctx, 'web')
 
         this.root=config.root?config.root: resolve(dirname(require.resolve('@zhinjs/client/package.json')), 'app')
         this.start()
@@ -27,7 +27,7 @@ class WebService extends DataService<string[]> {
         await this.createVite()
         this.serveAssets()
         if (this.config.open) {
-            const { port=8086 } = this.bot.options['http']||{}
+            const { port=8086 } = this.ctx.app.options['http']||{}
             open(`http://localhost:${port}${this.config.uiPath}`)
         }
         this.isStarted=true
@@ -38,7 +38,7 @@ class WebService extends DataService<string[]> {
         const key = 'extension-' + Math.random().toFixed(8)
         this.data[key] = entry
         this.refresh()
-        this.plugin.disposes.push(()=>{
+        this.plugin.context.disposes.push(()=>{
             delete this.data[key]
             this.refresh()
             return true
@@ -65,7 +65,7 @@ class WebService extends DataService<string[]> {
     private serveAssets() {
         const { uiPath } = this.config
         const {root}=this
-        this.bot.router.get(uiPath + '(/.+)*', async (ctx, next) => {
+        this.ctx.router.get(uiPath + '(/.+)*', async (ctx, next) => {
             // add trailing slash and redirect
             if (ctx.path === uiPath && !uiPath.endsWith('/')) {
                 return ctx.redirect(ctx.path + '/')
@@ -100,7 +100,7 @@ class WebService extends DataService<string[]> {
         } else {
             template = template.replace(/(href|src)="(?=\/)/g, (_, $1) => `${$1}="${uiPath}`)
         }
-        const headInjection = `<script>oitq_config = ${JSON.stringify(this.bot.console.global)}</script>`
+        const headInjection = `<script>oitq_config = ${JSON.stringify(this.ctx.console.global)}</script>`
         return template.replace('</title>', '</title>' + headInjection)
     }
 
@@ -136,8 +136,8 @@ class WebService extends DataService<string[]> {
             },
         })
 
-        this.bot.router.get('/vite(/.+)*', koaConnect(this.vite.middlewares))
-        this.plugin.disposes.push(() => {
+        this.ctx.router.get('/vite(/.+)*', koaConnect(this.vite.middlewares))
+        this.plugin.context.disposes.push(() => {
             this.vite.close()
             return true
         })

@@ -1,4 +1,4 @@
-import {Bot} from "zhin";
+import {Context,h} from "zhin";
 import {MusicPlatform} from 'oicq'
 import {default as axios} from 'axios'
 import * as qs from 'querystring'
@@ -90,14 +90,14 @@ type MusicInfo = {
     id: string
 }
 export const name='music'
-export function install(bot: Bot) {
+export function install(bot: Context) {
     bot
         .command('common/music [keyword:string]')
         .desc('点歌')
         .shortcut('点歌', {fuzzy: true})
         .shortcut(/^来一首(\S+)$/, {args: ['$1']})
         .option('platform', '-p <platform:string> 音乐平台', {initial: '163'})
-        .action(async ({event, options}, keyword) => {
+        .action(async ({session, options}, keyword) => {
             if (!keyword) {
                 return '请正确输入搜索词'
             }
@@ -116,16 +116,6 @@ export function install(bot: Bot) {
             if (typeof musicInfo === 'string') {
                 return m_ERR_MSG[musicInfo]
             }
-            switch (event.message_type) {
-                case 'private':
-                    await bot.pickFriend(event.sender.user_id).shareMusic(musicInfo.type, musicInfo.id)
-                    break;
-                case 'group':
-                    await bot.pickGroup(event.group_id).shareMusic(musicInfo.type, musicInfo.id)
-                    break;
-                default:
-                    break;
-            }
-            return true
+            return h('music',{type:musicInfo.type,id:musicInfo.id})
         })
 }

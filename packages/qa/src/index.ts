@@ -1,12 +1,12 @@
-import {Bot} from "zhin";
+import {Context} from "zhin";
 import '@zhinjs/plugin-database'
 import {QA} from "./models";
-import teach from './teach'
-import receiver from './receiver'
+import * as teach from './teach'
+import * as receiver from './receiver'
 export const name='qa'
 export const using=['database']
-export function install(bot:Bot){
-    bot.database.define('QA',QA)
-    bot.plugin({name:'qa/teach',install:teach})
-    bot.plugin({name:'qa/receiver',install:receiver})
+export function install(ctx:Context){
+    ctx.database.define('QA',QA)
+    ctx.plugin(teach)
+    ctx.plugin(receiver)
 }

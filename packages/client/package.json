@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/oitq/oitq.git"
+    "url": "git+https://github.com/zhinjs/zhin.git"
   },
   "keywords": [
     "client",
@@ -24,9 +24,9 @@
   "author": "凉菜 <admin@liucl.cn>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/oitq/oitq/issues"
+    "url": "https://github.com/zhinjs/zhin/issues"
   },
-  "homepage": "https://github.com/oitq/oitq#readme",
+  "homepage": "https://github.com/zhinjs/zhin#readme",
   "dependencies": {
     "@element-plus/icons-vue": "^1.1.4",
     "@vueuse/core": "^8.5.0",

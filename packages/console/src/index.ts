@@ -1,4 +1,4 @@
-import {Bot, Plugin } from 'zhin'
+import {Context, Plugin, Schema, useOptions} from 'zhin'
 import WebService from './web'
 import WsService from './ws'
 import { DataService } from './service'
@@ -12,7 +12,7 @@ type NestedServices = {
 }
 
 declare module 'zhin' {
-    namespace Bot {
+    namespace Zhin {
         interface Services extends NestedServices {
             console: Console
         }
@@ -28,18 +28,18 @@ export interface Console extends Console.Services {}
 
 export class Console {
     public global = {} as ClientConfig
-    constructor(public plugin:Plugin,public bot: Bot, public config: Console.Config) {
+    constructor(public plugin:Plugin,public ctx: Context, public config: Console.Config) {
         const { uiPath='console', apiPath='api', selfUrl='/' } = config
         this.global.uiPath = uiPath
         this.global.endpoint = selfUrl + apiPath
-        bot.service('console.web',new WebService(plugin,bot,config))
-        bot.service('console.ws',new WsService(plugin,bot,config))
+        ctx.service('console.web',new WebService(plugin,ctx,config))
+        ctx.service('console.ws',new WsService(plugin,ctx,config))
         const _this=this
         return new Proxy(_this,{
             get(target: typeof _this, p: string | symbol, receiver: any): any {
                 const data=Reflect.get(target,p,receiver)
                 if(data!==undefined||typeof p==='symbol') return data
-                return target.bot[`console.${p}`]
+                return target.ctx[`console.${p}`]
             }
         })
     }
@@ -62,8 +62,15 @@ export namespace Console {
         ws?: WsService
     }
 }
-
-export function install(bot:Bot,config:Console.Config){
+export const Config=Schema.object({
+    root:Schema.string(),
+    uiPath:Schema.string().default('console'),
+    open:Schema.boolean(),
+    selfUrl:Schema.string().default('/'),
+    apiPath:Schema.string().default('api')
+})
+export function install(ctx:Context){
+    let config:Console.Config=useOptions('services.console')
     if(config===null)config={}
-    bot.service('console',new Console(this,bot,config))
+    ctx.service('console',new Console(this,ctx,config))
 }

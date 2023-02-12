@@ -1,5 +1,4 @@
-import { toCqcode } from 'oicq2-cq-enable'
-import {segment} from 'oicq'
+import {Element} from "zhin";
 import { marked } from 'marked'
 
 declare module 'marked' {
@@ -20,7 +19,7 @@ function renderToken(token: marked.Token) {
     } else if (token.type === 'paragraph') {
         return render(token.tokens)
     } else if (token.type === 'image') {
-        return toCqcode({message:[segment.image(token.href)]})
+        return Element('image',{src:token.href}).toString()
     } else if (token.type === 'blockquote') {
         return token.text
     }

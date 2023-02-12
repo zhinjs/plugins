@@ -1,61 +1,61 @@
 import {formatContext, isSameEnv} from "./utils";
 import {CronTable} from "./models";
 import '@zhinjs/plugin-database'
-import {Bot, Time, toJSON} from "zhin";
+import { Context, NSession, Time, Zhin} from "zhin";
 export const using=['database'] as const
 export interface Config {
     minInterval?: number
 }
 export const name='cron'
-export function install(bot: Bot, config: Config={}) {
+export function install(ctx: Context, config: Config={}) {
     if(!config) config={}
-    bot.database.define('cron',CronTable.model)
+    ctx.database.define('cron',CronTable.model)
     async function hasCron(id: number) {
-        const data = await bot.database.get('cron',{id})
+        const data = await ctx.database.get('cron',{id})
         return !!data.length
     }
 
-    async function prepareCron({ id, interval, command, time, lastCall }: CronTable.Types, event: Bot.MessageEvent) {
+    async function prepareCron({ id, interval, command, time, lastCall }: CronTable.Types, session: NSession<keyof Zhin.Bots>) {
         const now = Date.now()
         const date = time.valueOf()
 
         async function executeCron() {
-            bot.logger.debug('execute %d: %s', id, command)
-            let result=await bot.execute({
-                event,
+            ctx.logger.debug('execute %d: %s', id, command)
+            let result=await session.execute({
+                session:session as any,
                 name:'exec',
                 args:[command]
             })
-            if(result && typeof result!=='boolean')await bot.sendMsg(Bot.getChannelId(event),result)
+            if(result && typeof result!=='boolean')await ctx.app.sendMsg(Zhin.getChannelId(session),result)
             if (!lastCall || !interval) return
             lastCall = new Date()
-            await bot.database.set('cron',{id},{ lastCall })
+            await ctx.database.set('cron',{id},{ lastCall })
         }
 
         if (!interval) {
             if (date < now) {
-                await bot.database.delete('cron',{id})
+                await ctx.database.delete('cron',{id})
                 if (lastCall) await executeCron()
                 return
             }
 
-            bot.logger.debug('prepare %d: %s at %s', id, command, time)
-            return bot.setTimeout(async () => {
+            ctx.logger.debug('prepare %d: %s at %s', id, command, time)
+            return ctx.setTimeout(async () => {
                 if (!await hasCron(id)) return
-                await bot.database.delete('cron',{id})
+                await ctx.database.delete('cron',{id})
                 await executeCron()
             }, date - now)
         }
 
-        bot.logger.debug('prepare %d: %c from %s every %s', id, command, time, Time.formatTimeShort(interval))
+        ctx.logger.debug('prepare %d: %c from %s every %s', id, command, time, Time.formatTimeShort(interval))
         const timeout = date < now ? interval - (now - date) % interval : date - now
         if (lastCall && timeout + now - interval > +lastCall) {
             await executeCron()
         }
 
-        bot.setTimeout(async () => {
+        ctx.setTimeout(async () => {
             if (!await hasCron(id)) return
-            const cleanInterval = bot.setInterval(async () => {
+            const cleanInterval = ctx.setInterval(async () => {
                 if (!await hasCron(id)) return cleanInterval()
                 await executeCron()
             }, interval)
@@ -63,16 +63,16 @@ export function install(bot: Bot, config: Config={}) {
         }, timeout)
     }
 
-    bot.on('after-ready', async () => {
-        const crons = await bot.database.get('cron',{assignee:bot.uin})
+    ctx.on('after-ready', async () => {
+        const crons = await ctx.database.get('cron',{})
         crons.forEach((cron) => {
             const schedule=cron.toJSON()
-            const { event } = schedule
-            prepareCron(schedule, event)
+            const { session } = schedule
+            prepareCron(schedule, session)
         })
     })
 
-    bot.command('cron [time]')
+    ctx.command('cron [time]')
         .desc('定时任务')
         .option('rest', '-- <command:text>  要执行的指令')
         .option('interval', '/ <interval:string>  设置触发的间隔秒数')
@@ -80,16 +80,16 @@ export function install(bot: Bot, config: Config={}) {
         .option('ensure', '-e  错过时间也确保执行')
         .option('full', '-f  查找全部上下文')
         .option('delete', '-d <id>  删除已经设置的日程')
-        .action(async ({ event, options }, ...dateSegments) => {
+        .action(async ({ session, options }, ...dateSegments) => {
             if (options.delete) {
-                await bot.database.delete('cron',{id:options.delete})
+                await ctx.database.delete('cron',{id:options.delete})
                 return `日程 ${options.delete} 已删除。`
             }
 
             if (options.list) {
-                let schedules = (await bot.database.get('cron')).map(t=>t.toJSON())
+                let schedules = (await ctx.database.get('cron')).map(t=>t.toJSON())
                 if (!options.full) {
-                    schedules = schedules.filter((s) => isSameEnv(s.event,event))
+                    schedules = schedules.filter((s) => isSameEnv(s.session,session))
                 }
                 if (!schedules.length) return '当前没有等待执行的日程。'
                 return schedules.map(({ id, time, interval, command, session }) => {
@@ -125,14 +125,14 @@ export function install(bot: Bot, config: Config={}) {
                 return '时间间隔过短。'
             }
 
-            const [cron] = await bot.database.add('cron',{
+            const [cron] = await ctx.database.add('cron',{
                 time,
-                assignee: bot.uin,
+                assignee: session.bot.self_id,
                 interval,
                 command: options.rest,
-                event: event,
+                session: session,
             })
-            prepareCron(cron.toJSON(), event)
+            prepareCron(cron.toJSON(), session)
             return `日程已创建，编号为 ${cron.toJSON().id}。`
         })
 }

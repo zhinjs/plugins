@@ -1,6 +1,5 @@
 import {Dialogue} from './teach'
-import {Bot} from "zhin";
-import {fromCqcode} from "oicq2-cq-enable";
+import {Context, NSession, Zhin,Element} from "zhin";
 
 function hasEnv(envs, type, target) {
     return envs.length === 0 || envs.some(item => {
@@ -9,11 +8,11 @@ function hasEnv(envs, type, target) {
 }
 
 
-export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
+export async function triggerTeach(bot: Context, session:NSession<keyof Zhin.Bots>) {
     const teaches = await bot.database.models.QA.findAll()
-    const question=event.toCqcode()
+    const question=session.elements.join('')
     const dialogues = teaches.map(teach => teach.toJSON())
-        .filter((teach) => hasEnv(teach.belongs, event.message_type, event['group_id'] || event['discuss_id'] || event.user_id))
+        .filter((teach) => hasEnv(teach.belongs, session.type, session['group_id'] || session['discuss_id'] || session.user_id))
         .filter(teach => {
             return teach.isReg ?
                 new RegExp(teach.question).test(question) :
@@ -47,8 +46,8 @@ export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
                 dialogue.redirect = dialogue.redirect.replace(reg, args[index])
             }
         }
-        event.message = fromCqcode(dialogue.redirect)
-        return triggerTeach(bot, event)
+        session.elements = Element.parse(dialogue.redirect,session)
+        return triggerTeach(bot, session)
     }
     if (dialogue.isReg) {
         const args = new RegExp(dialogue.question).exec(question)
@@ -62,9 +61,9 @@ export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
     let answerText=dialogue.answer
         .replace(/\$0/g,question)
     try{
-        return await bot.execute({
+        return await session.execute({
             name:'exec',
-            event,
+            session:session as any,
             args:[answerText]
         })
     }catch{
@@ -72,12 +71,12 @@ export async function triggerTeach(bot: Bot, event:Bot.MessageEvent) {
     }
 }
 export const name='qa.receiver'
-export default function install(bot: Bot) {
+export function install(bot: Context) {
     let preMessageId:string=''
     bot.middleware(async (message,next) =>{
         if(preMessageId===message.message_id) return next()
         preMessageId=message.message_id
-        if(message.post_type==='message'){
+        if(message.detail_type==='message'){
             const result=await triggerTeach(bot, message).catch(()=>{})
             if(result) message.reply(result)
         }

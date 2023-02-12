@@ -1,4 +1,4 @@
-import {Awaitable, Plugin, omit, pick, Time, Bot} from 'zhin'
+import {Awaitable, Plugin, omit, pick, Time, Context} from 'zhin'
 import { DataService, SocketHandle } from '@zhinjs/plugin-console'
 import {UserTable,DataTypes} from '@zhinjs/plugin-database'
 import { v4 } from 'uuid'
@@ -50,10 +50,10 @@ function setAuthUser(handle: SocketHandle, value: UserAuth) {
 export class AuthService extends DataService<UserAuth> {
     static using = ['console', 'database'] as const
 
-    constructor(public plugin: Plugin,bot:Bot, private config: AuthService.Config) {
-        super(bot, 'user')
+    constructor(public plugin: Plugin,ctx:Context, private config: AuthService.Config) {
+        super(ctx, 'user')
 
-        bot.database.extend('User', {
+        ctx.database.extend('User', {
             password: DataTypes.STRING,
             token: DataTypes.TEXT,
             expire: DataTypes.BIGINT,
@@ -62,11 +62,11 @@ export class AuthService extends DataService<UserAuth> {
     }
 
     initLogin() {
-        const { bot, config={loginTokenExpire:Time.minute*10,authTokenExpire:Time.week}}  = this
+        const { ctx, config={loginTokenExpire:Time.minute*10,authTokenExpire:Time.week}}  = this
         const states: Record<string, [string, number, SocketHandle]> = {}
 
-        bot.console.addListener('login/password', async function (user_id, password) {
-            const userInstance = await bot.database.model('User').findOne({where:{user_id},attributes:['id','password', ...authFields]})
+        ctx.console.addListener('login/password', async function (user_id, password) {
+            const userInstance = await ctx.database.model('User').findOne({where:{user_id},attributes:['id','password', ...authFields]})
             if(!userInstance)throw new Error('用户名错误。')
             const user=userInstance.toJSON() as UserTable.Types
             if (!user || user.password !== password) throw new Error('密码错误。')
@@ -79,16 +79,16 @@ export class AuthService extends DataService<UserAuth> {
             setAuthUser(this, omit(user, ['password']))
         })
 
-        bot.console.addListener('login/token', async function (user_id, token) {
-            const userInstance = await bot.database.model('User').findOne({where:{user_id},attributes:authFields})
+        ctx.console.addListener('login/token', async function (user_id, token) {
+            const userInstance = await ctx.database.model('User').findOne({where:{user_id},attributes:authFields})
             if (!userInstance) throw new Error('用户不存在。')
             const user=userInstance.toJSON() as UserTable.Types
             if (user.token !== token || user.expire <= Date.now()) throw new Error('令牌已失效。')
             setAuthUser(this, user)
         })
 
-        bot.console.addListener('login/captcha', async function (user_id) {
-            const userInstance = await bot.database.model('User').findOne({where:{user_id}})
+        ctx.console.addListener('login/captcha', async function (user_id) {
+            const userInstance = await ctx.database.model('User').findOne({where:{user_id}})
             if (!userInstance) throw new Error('找不到此账户。')
             const user=userInstance.toJSON()
             const token = v4()
@@ -100,7 +100,7 @@ export class AuthService extends DataService<UserAuth> {
                 dispose()
                 this.socket.removeEventListener('close', listener)
             }
-            const dispose = bot.setTimeout(() => {
+            const dispose = ctx.setTimeout(() => {
                 if (states[user_id]?.[1] >= Date.now()) listener()
             }, config.loginTokenExpire)
             this.socket.addEventListener('close', listener)
@@ -108,36 +108,36 @@ export class AuthService extends DataService<UserAuth> {
             return { user_id: user.user_id, name: user.name, token, expire }
         })
 
-        bot.middleware(async (session,next) => {
+        ctx.middleware(async (session,next) => {
             const state = states[session.user_id]
-            if (state && state[0] === session.toCqcode()) {
+            if (state && state[0] === session.elements.join('')) {
                 const user=session['friend']||session['member']
                 if (!user.expire || user.expire < Date.now()) {
                     user.token = v4()
                     user.expire = Date.now() + config.authTokenExpire
-                    await bot.database.model("User").update({token:v4(),expire:Date.now() + config.authTokenExpire},{where:{user_id:user.user_id}})
+                    await ctx.database.model("User").update({token:v4(),expire:Date.now() + config.authTokenExpire},{where:{user_id:user.user_id}})
                 }
                 return setAuthUser(state[2], user)
             }
             next()
         })
 
-        bot.on('console/intercept', (handle, listener) => {
+        ctx.on('console/intercept', (handle, listener) => {
             if (!listener.authority) return false
             if (!handle.user) return true
             if (handle.user.expire <= Date.now()) return true
             return handle.user.authority < listener.authority
         })
 
-        bot.console.addListener('user/logout', async function () {
+        ctx.console.addListener('user/logout', async function () {
             if(!this.user.user_id) return
             delete states[this.user.user_id]
             setAuthUser(this, null)
         })
 
-        bot.console.addListener('user/update', async function (data) {
+        ctx.console.addListener('user/update', async function (data) {
             if (!this.user) throw new Error('请先登录。')
-            await bot.database.model('User').update(data,{where: {user_id: this.user.user_id}})
+            await ctx.database.model('User').update(data,{where: {user_id: this.user.user_id}})
         })
     }
 }

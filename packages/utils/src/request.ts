@@ -1,5 +1,4 @@
-import {toCqcode} from "oicq2-cq-enable";
-import {Bot,Dict} from "zhin";
+import {Context, Dict, h, Schema, useOptions} from "zhin";
 import {segment} from "oicq";
 import path from "path";
 import fs from "fs";
@@ -64,18 +63,24 @@ export namespace Request {
         return http
     }
 }
+export const Config=Schema.object({
+    headers:Schema.dict(Schema.any()).description('请求头'),
+    endpoint:Schema.string().description('请求baseUrl'),
+    timeout:Schema.number().description('请求超时时间')
+})
 export const name='request'
-export function install(bot:Bot,config:Request.Config){
-    bot.service('axios',Request.create(config))
-    const p=bot.command('utils/axios')
+export function install(ctx:Context){
+    const config:Request.Config=Config(useOptions('plugins.request'))
+    ctx.service('axios',Request.create(config))
+    const p=ctx.command('utils/axios')
         .desc('请求工具')
-    p.subcommand('axios.get <url>')
+    p.subcommand('axios.get <url:string>')
         .desc('发起get请求')
         .option('callback','-c <callback:function> 回调函数')
         .option('config','-C <config:object> 配置请求config')
-        .action(async ({event,options},url)=>{
-            const res=await bot.axios.get(encodeURI(url),options.config)
-            const target=event['group']||event['friend']
+        .action(async ({session,options},url)=>{
+            const res=await ctx.axios.get(encodeURI(url),options.config)
+            const target=session['group']||session['friend']
             if(options.callback) return options.callback.apply({result:res,shareMusic:target.shareMusic.bind(target),segment})
             try{
                 return JSON.stringify(res,null,2)
@@ -83,26 +88,26 @@ export function install(bot:Bot,config:Request.Config){
                 return typeof res==='string'?res:undefined
             }
         })
-    p.subcommand('axios.load <url>')
+    p.subcommand('axios.load <url:string>')
         .desc('加载资源')
         .option('callback','-c <callback:function> 回调函数')
         .option('type','-t [type] 资源类型，可选值：image,music,video，默认：image',{initial:'image'})
-        .action(async ({event,options},url)=>{
+        .action(async ({session,options},url)=>{
             try{
-                const res=await bot.axios.get(encodeURI(url),{
+                const res=await ctx.axios.get(encodeURI(url),{
                     responseType: 'arraybuffer'
                 })
-                const target=event['group']||event['friend']
+                const target=session['group']||session['friend']
                 if(options.callback) return options.callback.apply({result:res,shareMusic:target.shareMusic.bind(target),segment})
                 switch (options.type){
                     case 'music':
-                        return toCqcode({message:[segment.record(`base64://${Buffer.from(res,'binary').toString('base64')}`)]})
+                        return h('record',{src:`base64://${Buffer.from(res,'binary').toString('base64')}`})
                     case 'image':
-                        return toCqcode({message:[segment.image(`base64://${Buffer.from(res,'binary').toString('base64')}`)]})
+                        return h('image',{src:`base64://${Buffer.from(res,'binary').toString('base64')}`})
                     case 'video':
-                        const fileUrl=path.join(bot.config.data_dir,`${new Date().getTime()}.mp4`)
+                        const fileUrl=path.join(ctx.app.options.data_dir,`${new Date().getTime()}.mp4`)
                         await fs.promises.writeFile(fileUrl, res, 'binary');
-                        return toCqcode({message:[segment.video(fileUrl)]})
+                        return h('video',{src:fileUrl})
                     default:
                         return '未知类型：'+options.type
                 }
@@ -110,14 +115,14 @@ export function install(bot:Bot,config:Request.Config){
                 return e.message
             }
         })
-    p.subcommand('axios.post <url>')
+    p.subcommand('axios.post <url:string>')
         .desc('发起post请求')
         .option('callback','-c <callback:function> 回调函数')
         .option('config','-C <config:object> 配置请求config')
         .option('data','-d <data:object> post数据')
-        .action(async ({event,options},url)=>{
-            const res=await bot.axios.post(encodeURI(url),options.data,options.config)
-            const target=event['group']||event['friend']
+        .action(async ({session,options},url)=>{
+            const res=await ctx.axios.post(encodeURI(url),options.data,options.config)
+            const target=session['group']||session['friend']
             if(options.callback) return options.callback.apply({result:res,shareMusic:target.shareMusic.bind(target),segment})
             try{
                 return JSON.stringify(res,null,2)

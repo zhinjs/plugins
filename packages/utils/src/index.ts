@@ -1,29 +1,34 @@
-import {Bot} from "zhin";
+import {Context, Schema, useOptions} from "zhin";
 import {install as request} from './request'
 import {Request} from "./request";
 import * as time from './time'
 import * as math from './math'
 export * from './request'
 declare module 'zhin'{
-    namespace Bot{
+    namespace Zhin{
         interface Services{
             axios:Request
         }
     }
 }
 export const name='utils'
-export function install(bot:Bot,config:Utils.Config={}){
+export const Config=Schema.object({
+    time:Schema.boolean(),
+    math:Schema.boolean()
+})
+export function install(ctx:Context){
+    let config:Utils.Config=useOptions('plugin.utils')
     if(!config) config={}
-    bot.command('utils')
+    ctx.command('utils')
         .desc('公共工具')
-    config.time!==false && bot.plugin(time)
-    config.math!==false && bot.plugin(math)
+    config.time!==false && ctx.plugin(time)
+    config.math!==false && ctx.plugin(math)
 
-    bot.plugin(request)
+    ctx.plugin(request)
 }
 export namespace Utils{
     export interface Config{
-        axios?:Request
+        request?:Request.Config
         time?:boolean
         math?:boolean
     }

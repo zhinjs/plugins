@@ -1,4 +1,4 @@
-import {Bot, template} from "zhin";
+import {Context,Session, template} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
 import '@zhinjs/plugin-prompt'
@@ -15,7 +15,7 @@ template.set('task', {
     steps: '执行指令详情:\n{0}'
 })
 declare module 'zhin' {
-    namespace Bot {
+    namespace Zhin {
         interface Services {
             tasks: Tasks
         }
@@ -26,18 +26,18 @@ export interface Pagination {
     pageSize: number
     pageNum: number
 }
-export const using=['database','prompt']
-export function install(bot:Bot){
-    const taskService=new Tasks(bot)
-    bot.service('tasks',taskService)
-    bot.command('task [id:integer]')
+export const using=['database']
+export function install(ctx:Context){
+    const taskService=new Tasks(ctx)
+    ctx.service('tasks',taskService)
+    ctx.command('task [id:integer]')
         .desc('任务管理')
         .option('list', '-l 查看已有任务', {initial: true})
         .option('pageNum', '/ <pageNum:integer> 查看指定页', {initial: 1})
         .option('search', '-s <keyword:string> 搜索指定名称的任务')
         .option('remove', '-r 移除指定任务')
         .shortcut(/^删除任务(\d+)$/, {options: {remove: true}, args: ['$1']})
-        .action(async ({options, event}, id) => {
+        .action(async ({options, session}, id) => {
             if (options.remove) {
                 if (!id) return '未指定任务id'
                 await this.taskModel.destroy({where: {id}})
@@ -49,74 +49,74 @@ export function install(bot:Bot){
             const result = await taskService.query(condition, pagination)
             return template('task.list', result.map(task => template('task.info', task.id, task.name, task.desc)).join('\n'))
         })
-    bot.command('task/task.add')
+    ctx.command('task/task.add')
         .desc('新增任务')
         .shortcut('新增任务')
-        .action(async ({event}, name) => {
-            const result = await taskService.modifyTask(event)
+        .action(async ({session}, name) => {
+            const result = await taskService.modifyTask(session)
             if (typeof result === 'string') return result
             return `添加任务(${result.id})成功`
         })
-    bot.command('task/task.edit [id:integer]')
+    ctx.command('task/task.edit [id:integer]')
         .desc('编辑任务')
         .shortcut('编辑任务')
         .auth("admins")
-        .action(async ({event}, id) => {
-            const result = await taskService.modifyTask( event, id)
+        .action(async ({session}, id) => {
+            const result = await taskService.modifyTask( session, id)
             if (typeof result === 'string') return result
             return `编辑任务(${result.id})成功`
         })
-    bot.command('task/task.info [id:integer]')
+    ctx.command('task/task.info [id:integer]')
         .desc('查看任务详情')
         .shortcut(/^查看任务(\d+)/, {args: ['$1']})
         .auth('admins')
-        .action(async ({event}, id) => {
+        .action(async ({session}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
             return template('task.info', task.id, task.name, task.desc) + template('task.steps', (task.steps || []).map(step => {
                 return template('task.step', step.index, step.template)
             }).join('\n'))
         })
-    bot.command('task/task.run [id:integer]')
+    ctx.command('task/task.run [id:integer]')
         .desc('执行指定任务')
         .shortcut(/^执行任务(\d+)/, {args: ['$1']})
         .auth("admins")
-        .action(async ({event}, id) => {
+        .action(async ({session}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
-            await event.reply(`正在执行任务${id}...`)
+            await session.reply(`正在执行任务${id}...`)
             for (const step of task.steps) {
                 try {
-                    const result=await bot.execute({
-                        event,
+                    const result=await session.execute({
+                        session,
                         name:'exec',
                         args:[step.template]
                     })
-                    if(result && typeof result!=='boolean') await event.reply(result)
+                    if(result && typeof result!=='boolean') await session.reply(result)
                 } catch (e) {
                     return e.message
                 }
             }
             return `任务执行完成`
         })
-    bot.once('ready',()=>{
-        const {Task, TaskStep} = bot.database.models
+    ctx.once('ready',()=>{
+        const {Task, TaskStep} = ctx.database.models
         Task.hasMany(TaskStep, {as: 'steps'})
         TaskStep.belongsTo(Task)
     })
 }
 class Tasks {
-    constructor(public bot: Bot) {
-        bot.database.define('Task', Task)
-        bot.database.define('TaskStep', TaskStep)
+    constructor(public ctx: Context) {
+        ctx.database.define('Task', Task)
+        ctx.database.define('TaskStep', TaskStep)
     }
 
     get taskModel() {
-        return this.bot.database.models.Task
+        return this.ctx.database.models.Task
     }
 
     get stepModel() {
-        return this.bot.database.models.TaskStep
+        return this.ctx.database.models.TaskStep
     }
 
     async changeTask(data: TaskWithSteps): Promise<TaskWithSteps> {
@@ -160,9 +160,9 @@ class Tasks {
         })).toJSON() as TaskWithSteps
     }
 
-    async modifyTask(event: Bot.MessageEvent, id?: number) {
+    async modifyTask(session: Session, id?: number) {
         let stepAddFinished: boolean = false
-        const task: TaskWithSteps = (await event.prompt.prompts({
+        const task: TaskWithSteps = (await session.prompt.prompts({
             name:{
                 type: 'text',
                 message: '请输入任务名称',
@@ -175,7 +175,7 @@ class Tasks {
         if (!task) return '输入超时'
         while (!stepAddFinished) {
             const steps = task.steps ||= []
-            const step = await event.prompt.prompts({
+            const step = await session.prompt.prompts({
                 template:{
                     type: 'text',
                     message: `第${steps.length + 1}步：\n请输入需要执行的指令`,
@@ -189,6 +189,6 @@ class Tasks {
             steps.push({index: steps.length + 1, template: step.template})
             if (!step.hasMore) break;
         }
-        return await this.changeTask({id, creator: event.user_id, ...task})
+        return await this.changeTask({id, creator: session.user_id, ...task})
     }
 }

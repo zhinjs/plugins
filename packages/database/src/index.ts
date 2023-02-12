@@ -1,4 +1,4 @@
-import {Bot, Dict, omit, Plugin} from "zhin";
+import {Context, Dict, omit, Schema, useOptions} from "zhin";
 import {Sequelize, Model, Options, DataType, ModelStatic} from "sequelize";
 export * from 'sequelize'
 import {GroupTable,UserTable} from "./tables";
@@ -22,23 +22,46 @@ export namespace TableColumn {
 }
 export type TableDecl = Record<string, DataType | TableColumn.Config>
 declare module 'zhin' {
-    namespace Bot {
+    namespace Zhin {
         interface Services {
             database: Database
         }
     }
-}
-declare module 'oicq'{
-    interface User extends UserTable.Types{}
-    interface Group extends GroupTable.Types{}
-    interface Discuss extends GroupTable.Types{}
+    interface Session {
+        group:GroupTable.Types
+        user:UserTable.Types
+    }
 }
 export const name='database'
-export async function install(this:Plugin,bot:Bot,options:Options){
-    bot.service('database',Database,options)
-    this.disposes.push(()=>{
-        bot.database.disconnect()
-        delete bot.database
+export const Config=Schema.object({
+    dialect:Schema.union([
+        Schema.const('mysql'),
+        Schema.const('postgres'),
+        Schema.const('sqlite'),
+        Schema.const('mariadb'),
+        Schema.const('mssql'),
+        Schema.const('db2'),
+        Schema.const('snowflake'),
+    ]).description('数据库适配器'),
+    dialectModule:Schema.dict(Schema.any()),
+    dialectModulePath:Schema.string(),
+    dialectOptions:Schema.dict(Schema.any()),
+    storage:Schema.string(),
+    database:Schema.string().description('数据库名'),
+    username:Schema.string().description('用户名'),
+    password:Schema.string().description('密码'),
+    host:Schema.string().description('连接地址'),
+    port:Schema.number().description('端口'),
+    ssl:Schema.boolean().description('是否ssl'),
+    protocol:Schema.string().description('协议'),
+    timezone:Schema.string().description('时区')
+})
+export async function install(ctx:Context){
+    const options=Config(useOptions('services.database'))
+    ctx.service('database',Database,options as Options)
+    ctx.disposes.push(()=>{
+        ctx.database.disconnect()
+        delete ctx.database
         return true
     })
 }
@@ -46,16 +69,16 @@ export class Database {
     private modelDecl: Record<string, TableDecl> = {}
     public sequelize: Sequelize
 
-    constructor(public bot:Bot,public options: Options) {
+    constructor(public ctx:Context,public options: Options) {
         this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
         this.define('User', UserTable.model)
         this.define('Group', GroupTable.model)
-        this.bot.on('before-ready',()=>{
+        this.ctx.on('before-ready',()=>{
             Object.entries(this.modelDecl).forEach(([name, decl]) => {
                 this.sequelize.define(name, decl,{timestamps:false})
             })
         })
-        this.bot.on('after-ready',async ()=>{
+        this.ctx.on('after-ready',async ()=>{
             await this.sequelize.sync({alter: true})
             this.connect()
         })
@@ -81,21 +104,21 @@ export class Database {
         return this.model(modelName).destroy({where:condition})
     }
     connect() {
-        this.bot.on('before-message', async (message) => {
-            const {sender: {nickname, user_id}} = message
+        this.ctx.on('before-message', async (session) => {
+            const {sender: {nickname, user_id}} = session
             const [userInfo] = await this.models.User.findOrCreate({
                 where: {
-                    user_id: message.user_id
+                    user_id: session.user_id
                 },
                 defaults: {
-                    authority: this.bot.isMaster(message.user_id)?7:this.bot.isAdmin(message.user_id)?4:1,
+                    authority: session.bot.isMaster(session)?7:session.bot.isMaster(session)?4:1,
                     name: nickname,
                     user_id,
                     ignore: false
                 }
             })
-            if(message.message_type==='group'){
-                const {group_id,group_name}=message
+            if(session.message_type==='group'){
+                const {group_id,group_name}=session
                 const [groupInfo] = await this.models.Group.findOrCreate({
                     where:{group_id},
                     defaults: {
@@ -104,10 +127,10 @@ export class Database {
                         ignore: false
                     }
                 })
-                Object.assign(message.group,omit(groupInfo.toJSON(),['group_id','name']))
-                Object.assign(message.member,omit(userInfo.toJSON(),['user_id','name']))
-            }else if(message.message_type==='discuss'){
-                const {discuss_id,discuss_name}=message
+                Object.assign(session.group,omit(groupInfo.toJSON(),['group_id','name']))
+                Object.assign(session.member,omit(userInfo.toJSON(),['user_id','name']))
+            }else if(session.message_type==='discuss'){
+                const {discuss_id,discuss_name}=session
                 const [groupInfo] = await this.models.Group.findOrCreate({
                     where:{group_id:discuss_id},
                     defaults: {
@@ -116,9 +139,9 @@ export class Database {
                         ignore: false
                     }
                 })
-                Object.assign(message.discuss,omit(groupInfo.toJSON(),['group_id','name']))
+                Object.assign(session.discuss,omit(groupInfo.toJSON(),['group_id','name']))
             }else{
-                Object.assign(message.friend,omit(userInfo.toJSON(),['user_id','name']))
+                Object.assign(session.friend,omit(userInfo.toJSON(),['user_id','name']))
             }
         })
     }
@@ -128,7 +151,7 @@ export class Database {
     }
 
     get logger() {
-        return this.bot.logger
+        return this.ctx.logger
     }
 
     extend(name: string, decl: TableDecl) {
