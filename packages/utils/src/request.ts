@@ -69,8 +69,8 @@ export const Config=Schema.object({
     timeout:Schema.number().description('请求超时时间')
 })
 export const name='request'
-export function install(ctx:Context){
-    const config:Request.Config=Config(useOptions('plugins.request'))
+export function install(ctx:Context,config){
+    if(!config) return
     ctx.service('axios',Request.create(config))
     const p=ctx.command('utils/axios')
         .desc('请求工具')

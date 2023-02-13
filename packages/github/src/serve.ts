@@ -4,7 +4,6 @@ import { Method } from 'axios'
 import {Request} from "@zhinjs/plugin-utils";
 import {GithubTable} from "./models/github";
 import {EventConfig} from './events'
-import '@zhinjs/plugin-prompt'
 export type ReplyPayloads = {
     [K in keyof ReplyHandler]?: ReplyHandler[K] extends (...args: infer P) => any ? P : never
 }
@@ -48,11 +47,20 @@ export class GitHub{
     private http: Request
     constructor(public ctx:Context,public config:Config) {
         this.http=ctx.axios.extend({})
-        ctx.database.extend('User',{
+        if(ctx.database){
+            this.init()
+        }else{
+            this.ctx.app.on('database-created',()=>{
+                this.init()
+            })
+        }
+    }
+    init(){
+        this.ctx.database.extend('User',{
             github_accessToken:DataTypes.STRING,
             github_refreshToken:DataTypes.STRING
         })
-        ctx.database.extend('Group',{
+        this.ctx.database.extend('Group',{
             github_webhooks:{
                 type:DataTypes.TEXT,
                 get():Dict<EventConfig> {
@@ -64,7 +72,7 @@ export class GitHub{
             }
 
         })
-        ctx.database.define('github',GithubTable.model)
+        this.ctx.database.define('github',GithubTable.model)
     }
     async getTokens(params: any) {
         return this.http.post<OAuth>('https://github.com/login/oauth/access_token', {}, {

@@ -18,7 +18,13 @@ export const Config=Schema.object({
 })
 export function install(ctx: Context) {
     const config=Config(useOptions('plugins.rss'))
-    ctx.database.define('Rss',Feed.table)
+    if(ctx.database){
+        ctx.database.define('Rss',Feed.table)
+    }else{
+        ctx.app.on('database-created',()=>{
+            ctx.database.define('Rss',Feed.table)
+        })
+    }
     const {timeout, refresh, userAgent} = config||{timeout:1000,refresh:10*1000,userAgent:''}
     const feedMap: Record<string, Set<ChannelId>> = {}
     const feeder = new RssFeedEmitter({skipFirstLoad: true, userAgent})

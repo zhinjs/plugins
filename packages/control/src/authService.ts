@@ -52,12 +52,21 @@ export class AuthService extends DataService<UserAuth> {
 
     constructor(public plugin: Plugin,ctx:Context, private config: AuthService.Config) {
         super(ctx, 'user')
-
-        ctx.database.extend('User', {
-            password: DataTypes.STRING,
-            token: DataTypes.TEXT,
-            expire: DataTypes.BIGINT,
-        })
+        if(ctx.database){
+            ctx.database.extend('User', {
+                password: DataTypes.STRING,
+                token: DataTypes.TEXT,
+                expire: DataTypes.BIGINT,
+            })
+        }else{
+            ctx.app.on('database-created',()=>{
+                ctx.database.extend('User', {
+                    password: DataTypes.STRING,
+                    token: DataTypes.TEXT,
+                    expire: DataTypes.BIGINT,
+                })
+            })
+        }
         this.initLogin()
     }
 
@@ -111,7 +120,7 @@ export class AuthService extends DataService<UserAuth> {
         ctx.middleware(async (session,next) => {
             const state = states[session.user_id]
             if (state && state[0] === session.elements.join('')) {
-                const user=session['friend']||session['member']
+                const user=session.friend||session.member||session.user
                 if (!user.expire || user.expire < Date.now()) {
                     user.token = v4()
                     user.expire = Date.now() + config.authTokenExpire

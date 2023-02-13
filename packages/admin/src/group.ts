@@ -2,6 +2,8 @@ import {Context} from "zhin";
 export const name='qqGroupAdmin'
 export const scope=['icqq'] as const
 export function install(ctx: Context) {
+    ctx.command('admin/group')
+        .desc('群管插件')
     ctx.command('admin/group/quit')
         .desc('退出当前群聊')
         .auth("admins",'master')

@@ -5,7 +5,6 @@ import {createServer} from "vite";
 import vuePlugin from "@vitejs/plugin-vue";
 import { DataService } from './service'
 import { ViteDevServer } from 'vite'
-import '@zhinjs/plugin-http'
 import koaConnect from 'koa-connect'
 
 class WebService extends DataService<string[]> {

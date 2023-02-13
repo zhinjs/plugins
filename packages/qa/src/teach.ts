@@ -1,5 +1,4 @@
 import {Context,template} from "zhin";
-import '@zhinjs/plugin-prompt'
 import {Op} from "sequelize";
 import {QA} from "./models";
 
@@ -51,7 +50,7 @@ template.set('teach', {
 {2}`,
     '404': `{0}({1})未找到任何有关问答`
 })
-export const using=['database','prompt']
+export const using=['database']
 export function install(ctx: Context) {
     ctx.command('qa [question:string] [answer:string]')
         .desc('问答管理')

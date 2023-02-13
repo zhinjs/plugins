@@ -2,7 +2,6 @@ import {Awaitable, Plugin, Dict, Context} from 'zhin'
 import { v4 } from 'uuid'
 import {WebSocket,WebSocketServer} from 'ws'
 import { DataService } from './service'
-import '@zhinjs/plugin-http'
 export class SocketHandle {
     readonly ctx: Context
     readonly id: string = v4()

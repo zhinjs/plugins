@@ -71,6 +71,6 @@ export const Config=Schema.object({
 })
 export function install(ctx:Context){
     let config:Console.Config=useOptions('services.console')
-    if(config===null)config={}
+    if(!config) config={}
     ctx.service('console',new Console(this,ctx,config))
 }

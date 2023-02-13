@@ -1,7 +1,6 @@
 import {Context,Session, template} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
-import '@zhinjs/plugin-prompt'
 import {Model} from "sequelize";
 
 interface TaskWithSteps extends Task {
@@ -99,16 +98,23 @@ export function install(ctx:Context){
             }
             return `任务执行完成`
         })
-    ctx.once('ready',()=>{
-        const {Task, TaskStep} = ctx.database.models
-        Task.hasMany(TaskStep, {as: 'steps'})
-        TaskStep.belongsTo(Task)
-    })
+    // ctx.app.on('before-database-mounted',()=>{
+    //     const {Task, TaskStep} = ctx.database.models
+    //     Task.hasMany(TaskStep, {as: 'steps'})
+    //     TaskStep.belongsTo(Task)
+    // })
 }
 class Tasks {
     constructor(public ctx: Context) {
-        ctx.database.define('Task', Task)
-        ctx.database.define('TaskStep', TaskStep)
+        if(ctx.database){
+            ctx.database.define('Task', Task)
+            ctx.database.define('TaskStep', TaskStep)
+        }else{
+            ctx.app.on('database-created',()=>{
+                ctx.database.define('Task', Task)
+                ctx.database.define('TaskStep', TaskStep)
+            })
+        }
     }
 
     get taskModel() {

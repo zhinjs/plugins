@@ -15,7 +15,8 @@ declare module 'zhin'{
 export const name='github'
 export const using=['database']
 export function install(ctx:Context){
-    const config:Config=useOptions('plugins.github')
+    const config:Config=useOptions('services.github')
+    if(!config) return
     config.path=sanitize(config.path)
     const { database } = ctx
     const { appId, redirect } = config
@@ -39,10 +40,19 @@ export function install(ctx:Context){
         delete tokens[token]
         const { code, state } = _ctx.query
         const data = await ctx.github.getTokens({ code, state, redirect_uri: redirect })
-        await database.model('User').update({
-            github_accessToken:data.access_token,
-            github_refreshToken: data.refresh_token,
-        },{where:{id}})
+        if(ctx.database?.isMounted){
+            await database.model('User').update({
+                github_accessToken:data.access_token,
+                github_refreshToken: data.refresh_token,
+            },{where:{id}})
+        }else{
+            ctx.app.on('database-mounted',async ()=>{
+                await database.model('User').update({
+                    github_accessToken:data.access_token,
+                    github_refreshToken: data.refresh_token,
+                },{where:{id}})
+            })
+        }
         return _ctx.status = 200
     })
     ctx.command('github [name:string]',"group")
@@ -242,7 +252,7 @@ export function install(ctx:Context){
 
             return request('PUT', `/user/starred/${options.repo}`, session, null, '操作')
         })
-    ctx.on('after-ready', async () => {
+    ctx.on('database-mounted', async () => {
         const channels = await ctx.database.get('Group')
         for (const channel of channels) {
             const { github_webhooks,group_id }=channel.toJSON()

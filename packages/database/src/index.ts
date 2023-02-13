@@ -28,7 +28,13 @@ declare module 'zhin' {
         }
     }
     interface Session {
+        group_name?:string
+        user_name?:string
+        discuss?:GroupTable.Types
+        discuss_name?:string
         group:GroupTable.Types
+        friend?:UserTable.Types
+        member?:UserTable.Types
         user:UserTable.Types
     }
 }
@@ -42,44 +48,48 @@ export const Config=Schema.object({
         Schema.const('mssql'),
         Schema.const('db2'),
         Schema.const('snowflake'),
-    ]).description('数据库适配器'),
-    dialectModule:Schema.dict(Schema.any()),
+    ]).description('数据库适配器').default('mysql'),
+    dialectModule:Schema.dict(Schema.any()).default(null),
     dialectModulePath:Schema.string(),
-    dialectOptions:Schema.dict(Schema.any()),
+    dialectOptions:Schema.dict(Schema.any()).default(null),
     storage:Schema.string(),
-    database:Schema.string().description('数据库名'),
-    username:Schema.string().description('用户名'),
+    database:Schema.string().description('数据库名').default('zhin'),
+    username:Schema.string().description('用户名').default('root'),
     password:Schema.string().description('密码'),
-    host:Schema.string().description('连接地址'),
-    port:Schema.number().description('端口'),
+    host:Schema.string().description('连接地址').default('localhost'),
+    port:Schema.number().description('端口').default(3306),
     ssl:Schema.boolean().description('是否ssl'),
     protocol:Schema.string().description('协议'),
     timezone:Schema.string().description('时区')
 })
-export async function install(ctx:Context){
+export function install(ctx:Context){
     const options=Config(useOptions('services.database'))
     ctx.service('database',Database,options as Options)
-    ctx.disposes.push(()=>{
+    // 这儿可以定义表结构
+    ctx.app.emit('database-created')
+    ctx.disposes.unshift(()=>{
         ctx.database.disconnect()
-        delete ctx.database
-        return true
     })
 }
-export class Database {
+class Database {
     private modelDecl: Record<string, TableDecl> = {}
     public sequelize: Sequelize
-
+    public isMounted:boolean
     constructor(public ctx:Context,public options: Options) {
         this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
         this.define('User', UserTable.model)
         this.define('Group', GroupTable.model)
-        this.ctx.on('before-ready',()=>{
+        this.ctx.app.on('before-ready',async ()=>{
             Object.entries(this.modelDecl).forEach(([name, decl]) => {
                 this.sequelize.define(name, decl,{timestamps:false})
             })
+            // 这儿可以定义表关系
+            this.ctx.app.emit('before-database-mounted')
         })
-        this.ctx.on('after-ready',async ()=>{
+        this.ctx.on('ready',async ()=>{
             await this.sequelize.sync({alter: true})
+            this.ctx.app.emit('database-mounted')
+            this.isMounted=true
             this.connect()
         })
     }
@@ -105,19 +115,19 @@ export class Database {
     }
     connect() {
         this.ctx.on('before-message', async (session) => {
-            const {sender: {nickname, user_id}} = session
+            const {user_id,user_name=''} = session
             const [userInfo] = await this.models.User.findOrCreate({
                 where: {
                     user_id: session.user_id
                 },
                 defaults: {
                     authority: session.bot.isMaster(session)?7:session.bot.isMaster(session)?4:1,
-                    name: nickname,
+                    name: user_name,
                     user_id,
                     ignore: false
                 }
             })
-            if(session.message_type==='group'){
+            if(session.detail_type==='group'){
                 const {group_id,group_name}=session
                 const [groupInfo] = await this.models.Group.findOrCreate({
                     where:{group_id},
@@ -129,7 +139,7 @@ export class Database {
                 })
                 Object.assign(session.group,omit(groupInfo.toJSON(),['group_id','name']))
                 Object.assign(session.member,omit(userInfo.toJSON(),['user_id','name']))
-            }else if(session.message_type==='discuss'){
+            }else if(session.detail_type==='discuss'){
                 const {discuss_id,discuss_name}=session
                 const [groupInfo] = await this.models.Group.findOrCreate({
                     where:{group_id:discuss_id},
@@ -141,12 +151,13 @@ export class Database {
                 })
                 Object.assign(session.discuss,omit(groupInfo.toJSON(),['group_id','name']))
             }else{
-                Object.assign(session.friend,omit(userInfo.toJSON(),['user_id','name']))
+                Object.assign(session.friend||session.user,omit(userInfo.toJSON(),['user_id','name']))
             }
         })
     }
 
     disconnect() {
+        this.ctx.app.emitSync('database-disposed')
         this.sequelize.close()
     }
 

@@ -23,8 +23,7 @@ export function install(ctx:Context){
         .desc('公共工具')
     config.time!==false && ctx.plugin(time)
     config.math!==false && ctx.plugin(math)
-
-    ctx.plugin(request)
+    request(ctx,config)
 }
 export namespace Utils{
     export interface Config{

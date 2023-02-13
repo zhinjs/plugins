@@ -42,7 +42,7 @@
     "kleur": "^4.1.5",
     "semver": "^7.3.7",
     "typescript": "^4.7.4",
-    "zhin": "^2.0.2-46"
+    "zhin": "^2.0.2-56"
   },
   "dependencies": {
     "latest-version": "^5.1.0"
