@@ -8,11 +8,11 @@ function hasEnv(envs, type, target) {
 }
 
 
-export async function triggerTeach(bot: Context, session:NSession<keyof Zhin.Bots>) {
-    const teaches = await bot.database.models.QA.findAll()
+export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bots>) {
+    const teaches = await ctx.database.models.QA.findAll()
     const question=session.elements.join('')
     const dialogues = teaches.map(teach => teach.toJSON())
-        .filter((teach) => hasEnv(teach.belongs, session.type, session['group_id'] || session['discuss_id'] || session.user_id))
+        .filter((teach) => hasEnv(teach.belongs, session.detail_type, session.group_id || session.discuss_id || session.user_id))
         .filter(teach => {
             return teach.isReg ?
                 new RegExp(teach.question).test(question) :
@@ -47,7 +47,7 @@ export async function triggerTeach(bot: Context, session:NSession<keyof Zhin.Bot
             }
         }
         session.elements = Element.parse(dialogue.redirect,session)
-        return triggerTeach(bot, session)
+        return triggerTeach(ctx, session)
     }
     if (dialogue.isReg) {
         const args = new RegExp(dialogue.question).exec(question)
@@ -61,25 +61,21 @@ export async function triggerTeach(bot: Context, session:NSession<keyof Zhin.Bot
     let answerText=dialogue.answer
         .replace(/\$0/g,question)
     try{
-        return await session.execute({
-            name:'exec',
-            session:session as any,
-            args:[answerText]
-        })
+        return await session.render(Element.parse(answerText,session))
     }catch{
         return answerText
     }
 }
 export const name='qa.receiver'
-export function install(bot: Context) {
+export function install(ctx: Context) {
     let preMessageId:string=''
-    bot.middleware(async (message,next) =>{
-        if(preMessageId===message.message_id) return next()
-        preMessageId=message.message_id
-        if(message.detail_type==='message'){
-            const result=await triggerTeach(bot, message).catch(()=>{})
-            if(result) message.reply(result)
-        }
+    ctx.app.middleware(async (session,next) =>{
         await next()
-    })
+        if(preMessageId===session.message_id) return
+        preMessageId=session.message_id
+        if(session.type==='message'){
+            const result=await triggerTeach(ctx, session).catch(()=>{})
+            if(result) session.reply(result)
+        }
+    },true)
 }

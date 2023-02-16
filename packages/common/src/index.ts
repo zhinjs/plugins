@@ -1,35 +1,40 @@
 import {h, NSession, Context, Zhin, Schema, useOptions} from "zhin";
 import * as music from './music'
+
 export interface RecallConfig {
     recall?: number
 }
+
 export interface BasicConfig extends RecallConfig {
     echo?: boolean
     send?: boolean
     feedback?: number | number[]
 }
-export const name='common'
-export const Config=Schema.object({
-    recall:Schema.number().description('撤回消息缓冲条数').default(10),
-    echo:Schema.boolean().description('是否启用echo插件'),
-    send:Schema.boolean().description('是否启用send插件'),
-    feedback:Schema.union([Schema.number(),Schema.array(Schema.number())]).description('接收反馈消息的用户ID'),
+
+export const name = 'common'
+export const Config = Schema.object({
+    recall: Schema.number().description('撤回消息缓冲条数').default(10),
+    echo: Schema.boolean().description('是否启用echo插件'),
+    send: Schema.boolean().description('是否启用send插件'),
+    feedback: Schema.union([Schema.number(), Schema.array(Schema.number())]).description('接收反馈消息的用户ID'),
 })
+
 export interface Config extends BasicConfig {
 }
+
 export function install(ctx: Context) {
     ctx.command('code <pluginName:string>')
         .desc('输出指定插件源码')
-        .action((_,pluginName)=>{
-            if(!pluginName) return
-            try{
+        .action((_, pluginName) => {
+            if (!pluginName) return
+            try {
 
-                const plugin=ctx.plugin(pluginName)
-                if(plugin instanceof Context){
+                const plugin = ctx.plugin(pluginName)
+                if (plugin instanceof Context) {
                     return
                 }
-                return plugin.options.install.toString().replace(/(\\u.{4})+/g,(str)=>eval(`'${str}'`))
-            }catch{
+                return plugin.options.install.toString().replace(/(\\u.{4})+/g, (str) => eval(`'${str}'`))
+            } catch {
                 return '未找到插件'
             }
         })
@@ -42,25 +47,26 @@ export function install(ctx: Context) {
         .action((_, id) => h('face', {id}))
     ctx.command('common/segment/image <file:string>')
         .desc('发送一个一张图片')
-        .action((_, file) => h('image',{src:file}))
+        .action((_, file) => h('image', {src: file}))
     ctx.command('common/segment/mention <user_id:string>')
         .desc('发送mention')
-        .action((_, user_id) => h('mention',{user_id}))
+        .action((_, user_id) => h('mention', {user_id}))
     ctx.command('common/segment/dice [id:integer]')
         .desc('发送摇骰子结果')
-        .action((_, id) => h('dice',{id}))
+        .action((_, id) => h('dice', {id}))
     ctx.command('common/segment/rps [id:integer]')
         .desc('发送猜拳结果')
-        .action((_, id) => h('rpx',{id}))
+        .action((_, id) => h('rpx', {id}))
     ctx.command('common/segment/poke')
         .desc('发送戳一戳【随机一中类型】')
     ctx.plugin(basic)
     ctx.plugin(music)
 }
+
 export function echo(ctx: Context) {
     ctx.command('common/echo <varName:string>')
         .desc('输出当前会话中的变量值')
-        .action(async ({session,bot}, varName) => {
+        .action(async ({session, bot}, varName) => {
             let result: any = session
             if (!varName) return '请输入变量名'
             if (varName.match(/\(.*\)/) && !bot.isMaster(session)) return `禁止调用函数:this.${varName}`
@@ -76,30 +82,30 @@ export function echo(ctx: Context) {
                 throw e
             }
             if (result === undefined) throw new Error('未找到变量' + varName)
-            if(result instanceof Promise) result=await result
-            if(['function','map'].includes(typeof result)) return result.toString()
+            if (result instanceof Promise) result = await result
+            if (['function', 'map'].includes(typeof result)) return result.toString()
             return JSON.stringify(result, null, 4).replace(/"/g, '')
         })
 }
 
 export function send(ctx: Context) {
-    ctx.command('common/send <message:text>')
+    ctx.command('common/send <message>')
         .desc('向当前上下文发送消息')
         .option('user', '-u [user:number]  发送到用户')
         .option('group', '-g [group:number]  发送到群')
         .option('discuss', '-d [discuss:number]  发送到讨论组')
-        .action(async ({session,bot, options}, message) => {
+        .action(async ({session, bot, options}, message) => {
             if (!message) return '请输入需要发送的消息'
             if (options.user) {
-                await bot.callApi('sendMsg',options.user,'private', message)
+                await bot.callApi('sendMsg', options.user, 'private', message)
                 return true
             }
             if (options.group) {
-                await bot.callApi('sendMsg',options.group,'group', message)
+                await bot.callApi('sendMsg', options.group, 'group', message)
                 return true
             }
             if (options.discuss) {
-                await bot.callApi('sendMsg',options.discuss,'discuss', message)
+                await bot.callApi('sendMsg', options.discuss, 'discuss', message)
                 return true
             }
             return message
@@ -107,14 +113,14 @@ export function send(ctx: Context) {
 }
 
 export function recall(ctx: Context) {
-    const {recall=10}=Config(useOptions('plugins.common'))
+    const {recall = 10} = Config(useOptions('plugins.common'))
     const recent: Record<number, string[]> = {}
-    ctx.on('send', ({message_id,group_id,user_id,guild_id,channel_id}) => {
-        let target_id:number
-        if(message_id.length>24){
-            target_id=group_id
-        }else{
-            target_id=user_id
+    ctx.on('send', ({message_id, group_id, user_id, guild_id, channel_id}) => {
+        let target_id: number
+        if (message_id.length > 24) {
+            target_id = group_id
+        } else {
+            target_id = user_id
         }
         const list = recent[target_id] ||= []
         list.unshift(message_id)
@@ -124,15 +130,15 @@ export function recall(ctx: Context) {
     })
     ctx.command('common/recall [count:number]')
         .desc('撤回机器人发送的消息')
-        .action(async ({session,bot}, count = 1) => {
-            let target_id=session.group_id||session.user_id
+        .action(async ({session, bot}, count = 1) => {
+            let target_id = session.group_id || session.user_id
             const list = recent[target_id] ||= []
             if (!list.length) return '近期没有发送消息。'
             const removal = list.splice(0, count)
             if (!list.length) delete recent[target_id]
             for (let index = 0; index < removal.length; index++) {
                 try {
-                    await bot.callApi('deleteMsg',removal[index])
+                    await bot.callApi('deleteMsg', removal[index])
                 } catch (error) {
                     ctx.logger.warn(error)
                 }
@@ -142,22 +148,22 @@ export function recall(ctx: Context) {
 }
 
 export function feedback(ctx: Context) {
-    let {feedback=[]}=Config(useOptions('plugins.common'))
-    let operators=[].concat(feedback)
-    async function createReplyCallback(ctx:Context,session1:NSession<keyof Zhin.Bots>,message_id, user_id:number) {
-        const dispose=ctx.middleware((session2,next)=>{
-            if(session2.quote){
-                if(session2.quote.message_id !==message_id) return next()
+    let {feedback = []} = Config(useOptions('plugins.common'))
+    let operators = [].concat(feedback)
+
+    async function createReplyCallback(ctx: Context, session1: NSession<keyof Zhin.Bots>, message_id, user_id: number) {
+        const dispose = ctx.middleware((session2, next) => {
+            if (session2.quote) {
+                if (session2.quote.message_id !== message_id) return next()
                 session1.reply(['来自作者的回复：\n', ...session2.elements])
                 dispose()
-            }
-            else next()
+            } else next()
         })
     }
 
     ctx.command('common/feedback <message:text>')
         .desc('发送反馈信息给作者')
-        .action(async ({session,bot}, text) => {
+        .action(async ({session, bot}, text) => {
             if (!text) return '请输入反馈消息'
             const name = session.sender['card'] || session.sender['title'] || session.sender.nickname
 
@@ -169,15 +175,15 @@ export function feedback(ctx: Context) {
             const message = `收到来自${fromCN[session.detail_type]()}的消息：\n${text}`
             for (let index = 0; index < operators.length; ++index) {
                 const user_id = operators[index]
-                const {message_id}=await bot.callApi('sendMsg',user_id,'private', message)
-                createReplyCallback(ctx,session,message_id, user_id)
+                const {message_id} = await bot.callApi('sendMsg', user_id, 'private', message)
+                createReplyCallback(ctx, session, message_id, user_id)
             }
             return '反馈成功'
         })
 }
 
 export function basic(ctx: Context, config: BasicConfig = {feedback: []}) {
-    if(!config) config={}
+    if (!config) config = {}
     if (config.echo !== false) ctx.plugin(echo)
     if (config.send !== false) ctx.plugin(send)
     if (!(config.recall <= 0)) ctx.plugin(recall)

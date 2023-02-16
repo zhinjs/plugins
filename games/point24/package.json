@@ -1,0 +1,30 @@
+{
+  "name": "@zhinjs/plugin-point24",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "setup": true,
+  "version": "0.0.1",
+  "description": "24点 游戏",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhinjs/plugins.git",
+    "directory": "games/point24"
+  },
+  "keywords": [
+    "24点",
+    "game",
+    "zhin"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.ttf",
+    "lib/**/LICENSE"
+  ],
+  "author": "凉菜 <admin@liucl.cn>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhinjs/plugins/issues"
+  },
+  "homepage": "https://github.com/zhinjs/plugins#readme"
+}

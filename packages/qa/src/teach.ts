@@ -52,23 +52,22 @@ template.set('teach', {
 })
 export const using=['database']
 export function install(ctx: Context) {
-    ctx.command('qa [question:string] [answer:string]')
+    ctx.command('qa [question:string] [answer]')
         .desc('问答管理')
         .option('list', '-l 查看问答列表')
         .option('detail', '-d 查看指定教学详情')
         .option('search', '-s <keyword:string> 搜索关键词')
         .option('remove', '-r 删除指定id的教学')
-        .option('target', '-T <type> 操作类型', {hidden: true})
         .option('id', '-i <id:string> 操作id', {hidden: true})
         .option('regexp', '-x 是否为正则匹配')
         .option('redirect', '=> <question:string> 重定向到问题')
         .option('probability', '-p <probability:number> 触发概率')
         .option('trigger', '-t [trigger:string] 触发环境')
         .option('page', '/ <page:integer> 页码')
-        .alias('#')
         .shortcut(/^## (\S+)$/, {options: {search: '$1'},fuzzy:true})
         .option('edit', '-e 是否为编辑')
-        .shortcut(/^#(\d+) -([dr])$/, {options: {id: '$1', target: '$2'}})
+        .shortcut(/^删除问答(\d+)$/, {options: {id: '$1',remove:true}})
+        .shortcut(/^查看问答(\d+)$/, {options: {id: '$1',detail:true}})
         .example('`# -l` 查看第一页')
         .example('`# -l / 2` 查看第二页问答')
         .example('`# -s test` 搜索关键词为`test`的问答')
@@ -78,13 +77,7 @@ export function install(ctx: Context) {
             if (Object.keys(options).filter(key => ['list', 'detail', 'search', 'edit', 'remove'].includes(key)).length > 1) {
                 return '查询/列表/详情、编辑/删除只能同时调用一个'
             }
-            if (options.id && options.target) {
-                if (options.target === 'r') {
-                    options.remove = true
-                } else {
-                    options.detail = true
-                }
-            }
+            console.log(options,q,q)
             function filterResult(list) {
                 const result=list.map(teach => teach.toJSON())
                     .filter((dialogue: Dialogue) => {
@@ -170,7 +163,7 @@ export function install(ctx: Context) {
                     isReg: !!options.regexp
                 }
                 if (a) {
-                    data.answer = a
+                    data.answer = a.toString()
                 }
                 if (options.probability) {
                     data.probability = options.probability
