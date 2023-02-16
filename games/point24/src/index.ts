@@ -1,7 +1,7 @@
 import {Random, useContext} from "zhin";
 function calc24(...args:number[]){
     const expression = args.slice().sort();
-    const operator = ['+','-','*','/'],result = [],hash = {};
+    const operator = ['+','-','*','/'],result:string[] = [],hash = {};
     const dfs=(expression)=>{
         const len = expression.length;
         const group_str = expression.slice(0).sort().toString();
