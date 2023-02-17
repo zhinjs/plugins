@@ -58,15 +58,14 @@ export class AuthService extends DataService<UserAuth> {
                 token: DataTypes.TEXT,
                 expire: DataTypes.BIGINT,
             })
-        }else{
-            ctx.app.on('database-created',()=>{
-                ctx.database.extend('User', {
-                    password: DataTypes.STRING,
-                    token: DataTypes.TEXT,
-                    expire: DataTypes.BIGINT,
-                })
-            })
         }
+        ctx.disposes.push(ctx.app.on('database-created',()=>{
+            ctx.database.extend('User', {
+                password: DataTypes.STRING,
+                token: DataTypes.TEXT,
+                expire: DataTypes.BIGINT,
+            })
+        }))
         this.initLogin()
     }
 

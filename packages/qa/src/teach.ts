@@ -77,7 +77,6 @@ export function install(ctx: Context) {
             if (Object.keys(options).filter(key => ['list', 'detail', 'search', 'edit', 'remove'].includes(key)).length > 1) {
                 return '查询/列表/详情、编辑/删除只能同时调用一个'
             }
-            console.log(options,q,q)
             function filterResult(list) {
                 const result=list.map(teach => teach.toJSON())
                     .filter((dialogue: Dialogue) => {
@@ -103,9 +102,6 @@ export function install(ctx: Context) {
                 }
             }
 
-            function maybeRegExp(question: string) {
-                return question.startsWith('^') || question.endsWith('$')
-            }
             if (options.search) {
                 const condition = {
                     where: {

@@ -46,7 +46,7 @@ export function install(ctx:Context){
                 github_refreshToken: data.refresh_token,
             },{where:{id}})
         }else{
-            ctx.app.on('database-mounted',async ()=>{
+            ctx.app.on('database-ready',async ()=>{
                 await database.model('User').update({
                     github_accessToken:data.access_token,
                     github_refreshToken: data.refresh_token,
@@ -252,7 +252,7 @@ export function install(ctx:Context){
 
             return request('PUT', `/user/starred/${options.repo}`, session, null, '操作')
         })
-    ctx.on('database-mounted', async () => {
+    ctx.disposes.push(ctx.on('database-ready', async () => {
         const channels = await ctx.database.get('Group')
         for (const channel of channels) {
             const { github_webhooks,group_id }=channel.toJSON()
@@ -261,7 +261,7 @@ export function install(ctx:Context){
                 subscribe(repo, group_id, github_webhooks[repo])
             }
         }
-    })
+    }))
     const reactions = ['+1', '-1', 'laugh', 'confused', 'heart', 'hooray', 'rocket', 'eyes']
 
     function safeParse(source: string) {

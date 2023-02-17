@@ -1,4 +1,4 @@
-import {Random, useContext} from "zhin";
+import {evaluate, Random, useContext, Zhin} from "zhin";
 function calc24(...args:number[]){
     const expression = args.slice().sort();
     const operator = ['+','-','*','/'],result:string[] = [],hash = {};
@@ -33,27 +33,47 @@ function calc24(...args:number[]){
     return result;
 }
 const ctx=useContext()
+const  gameMaps:Set<string>=new Set<string>()
 ctx.command('24点')
 .action(async ({session})=>{
-    const numbers=new Array(4).fill(false).map(()=>Random.int(9))
+    const channel=Zhin.getChannelId(session)
+    if(gameMaps.has(channel)) return '当前会话已有进行中的游戏'
+    const numbers=new Array(4).fill(false).map(()=>Random.int(1,9))
     let result=calc24(...numbers)
+    gameMaps.add(channel)
     await session.intercept(
-        `游戏开始,请使用:${numbers.join()}与运算符拼出一个可以得到24的算式\n如果无解，请输入'无解'\n如想退出，请输入'结束游戏'`,
+        `游戏开始,请使用:${numbers.join()}与运算符拼出一个可以得到24的算式\n如果无解，请输入'无解'\n看答案，请输入'求解'(管理可用)\n如想退出，请输入'结束游戏'`,
         (session)=>{
             if(/[0-9+\-*\/()]+/.test(session.elements.join(''))) session.reply('答案不对哦，再试试')
+            if(session.elements.join()==='求解' && (session.bot.isGroupAdmin(session) || session.bot.isGroupOwner(session) || session.bot.isMaster(session))){
+                if(result.length) session.reply(`我算出了这么几个：\n${result.join('\n')}`)
+                else session.reply('这题无解')
+            }
         },
         (session)=>{
-            if(session.elements.join()==='无解' && result.length===0){
+            if(session.elements.join('')==='无解' && result.length===0){
                 session.reply('确实无解')
+                gameMaps.delete(channel)
                 return true
             }
             if(session.elements.join('')==='结束游戏'){
                 session.reply('好的，马上结束')
+                gameMaps.delete(channel)
                 return true
             }
-            if(result.includes(session.elements.join(''))){
-                session.reply('厉害，游戏结束')
-                return true
+            const input=session.elements.join('')
+            const matched=input.replace(new RegExp(`[^${Array.from(new Set(numbers)).join('')}]`,'ig'),'')
+            if(matched){
+                const inputNumbers=matched.split('').map(Number)
+                if(numbers.every(n=>inputNumbers.includes(n)) && ['24',24].includes(evaluate(input,{}))){
+                    session.reply('厉害，游戏结束')
+                    gameMaps.delete(channel)
+                    return true
+                }
             }
-        },(s)=>s.group_id===session.group_id)
+        },(s)=>Zhin.getChannelId(s)===channel)
+    if(gameMaps.has(channel)) {
+        gameMaps.delete(channel)
+        return '超时了'
+    }
 })

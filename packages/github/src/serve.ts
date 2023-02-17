@@ -49,11 +49,10 @@ export class GitHub{
         this.http=ctx.axios.extend({})
         if(ctx.database){
             this.init()
-        }else{
-            this.ctx.app.on('database-created',()=>{
-                this.init()
-            })
         }
+        ctx.disposes.push(this.ctx.app.on('database-created',()=>{
+            this.init()
+        }))
     }
     init(){
         this.ctx.database.extend('User',{

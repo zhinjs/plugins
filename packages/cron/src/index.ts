@@ -11,11 +11,10 @@ export function install(ctx: Context, config: Config={}) {
     if(!config) config={}
     if(ctx.database){
         ctx.database.define('cron',CronTable.model)
-    }else{
-        ctx.app.on('database-created',()=>{
-            ctx.database.define('cron',CronTable.model)
-        })
     }
+    ctx.disposes.push(ctx.app.on('database-created',()=>{
+        ctx.database.define('cron',CronTable.model)
+    }))
     async function hasCron(id: number) {
         const data = await ctx.database.get('cron',{id})
         return !!data.length

@@ -1,4 +1,4 @@
-import {Context,Session, template} from "zhin";
+import {Context, Session, template} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
 import {Model} from "sequelize";
@@ -25,10 +25,12 @@ export interface Pagination {
     pageSize: number
     pageNum: number
 }
-export const using=['database']
-export function install(ctx:Context){
-    const taskService=new Tasks(ctx)
-    ctx.service('tasks',taskService)
+
+export const using = ['database']
+
+export function install(ctx: Context) {
+    const taskService = new Tasks(ctx)
+    ctx.service('tasks', taskService)
     ctx.command('task [id:integer]')
         .desc('任务管理')
         .option('list', '-l 查看已有任务', {initial: true})
@@ -61,7 +63,7 @@ export function install(ctx:Context){
         .shortcut('编辑任务')
         .auth("admins")
         .action(async ({session}, id) => {
-            const result = await taskService.modifyTask( session, id)
+            const result = await taskService.modifyTask(session, id)
             if (typeof result === 'string') return result
             return `编辑任务(${result.id})成功`
         })
@@ -86,35 +88,37 @@ export function install(ctx:Context){
             await session.reply(`正在执行任务${id}...`)
             for (const step of task.steps) {
                 try {
-                    const result=await session.execute({
+                    const result = await session.execute({
                         session,
-                        name:'exec',
-                        args:[step.template]
+                        name: 'exec',
+                        args: [step.template]
                     })
-                    if(result && typeof result!=='boolean') await session.reply(result)
+                    if (result && typeof result !== 'boolean') await session.reply(result)
                 } catch (e) {
                     return e.message
                 }
             }
             return `任务执行完成`
         })
-    // ctx.app.on('before-database-mounted',()=>{
-    //     const {Task, TaskStep} = ctx.database.models
-    //     Task.hasMany(TaskStep, {as: 'steps'})
-    //     TaskStep.belongsTo(Task)
-    // })
 }
+
 class Tasks {
     constructor(public ctx: Context) {
-        if(ctx.database){
+        if (ctx.database) {
             ctx.database.define('Task', Task)
             ctx.database.define('TaskStep', TaskStep)
-        }else{
-            ctx.app.on('database-created',()=>{
+        }
+        ctx.disposes.push(
+            ctx.app.on('database-created', () => {
                 ctx.database.define('Task', Task)
                 ctx.database.define('TaskStep', TaskStep)
+            }),
+            ctx.app.on('database-mounted', () => {
+                const {Task, TaskStep} = ctx.database.models
+                Task.hasMany(TaskStep, {as: 'steps'})
+                TaskStep.belongsTo(Task)
             })
-        }
+        )
     }
 
     get taskModel() {
@@ -169,11 +173,11 @@ class Tasks {
     async modifyTask(session: Session, id?: number) {
         let stepAddFinished: boolean = false
         const task: TaskWithSteps = (await session.prompt.prompts({
-            name:{
+            name: {
                 type: 'text',
                 message: '请输入任务名称',
             },
-            desc:{
+            desc: {
                 type: 'text',
                 message: '请输入任务描述',
             }
@@ -182,11 +186,11 @@ class Tasks {
         while (!stepAddFinished) {
             const steps = task.steps ||= []
             const step = await session.prompt.prompts({
-                template:{
+                template: {
                     type: 'text',
                     message: `第${steps.length + 1}步：\n请输入需要执行的指令`,
                 },
-                hasMore:{
+                hasMore: {
                     type: 'confirm',
                     message: '是否继续添加',
                 }
