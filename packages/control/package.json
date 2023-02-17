@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-control",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "知音web管理插件",
   "repository": {
     "type": "git",

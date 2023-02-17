@@ -1,35 +1,37 @@
 import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, Schema, useOptions} from "zhin";
 import '@zhinjs/plugin-database'
-import {EventConfig,addListeners,defaultEvents,CommonPayload} from "./events";
-import {GitHub,Config,ReplyHandler} from "./serve";
+import {EventConfig, addListeners, defaultEvents, CommonPayload} from "./events";
+import {GitHub, Config, ReplyHandler} from "./serve";
 import {encode} from "querystring";
 import {Method} from "axios";
 import {createHmac} from "crypto";
-declare module 'zhin'{
-    namespace Zhin{
-        interface Services{
-            github:GitHub
+
+declare module 'zhin' {
+    namespace Zhin {
+        interface Services {
+            github: GitHub
         }
     }
 }
-export const name='github'
-export const using=['database']
-export function install(ctx:Context){
-    const config:Config=useOptions('services.github')
-    if(!config) return
-    config.path=sanitize(config.path)
-    const { database } = ctx
-    const { appId, redirect } = config
+export const name = 'github'
+export const using = ['database']
+
+export function install(ctx: Context) {
+    const config: Config = useOptions('services.github')
+    if (!config) return
+    config.path = sanitize(config.path)
+    const {database} = ctx
+    const {appId, redirect} = config
     const subscriptions: Dict<Dict<EventConfig>> = {}
-    ctx.service('github',GitHub,config)
-    ctx.middleware(async (session,next) => {
+    ctx.service('github', GitHub, config)
+    ctx.middleware(async (session, next) => {
         await next()
         const mathReg = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
         const match = session.elements.join('').match(mathReg)
         if (!match) return
         const [, owner, repo] = match
         const src = `https://opengraph.github.com/repo/${owner}/${repo}`
-        session.reply(h('image',{src}))
+        session.reply(h('image', {src}))
     })
     const tokens: Dict<number> = Object.create(null)
     ctx.router.get(config.path + '/authorize', async (_ctx) => {
@@ -38,33 +40,34 @@ export function install(ctx:Context){
         const id = tokens[token]
         if (!id) return _ctx.status = 403
         delete tokens[token]
-        const { code, state } = _ctx.query
-        const data = await ctx.github.getTokens({ code, state, redirect_uri: redirect })
-        if(ctx.database?.isMounted){
+        const {code, state} = _ctx.query
+        const data = await ctx.github.getTokens({code, state, redirect_uri: redirect})
+        if (ctx.database.isReady) {
             await database.model('User').update({
-                github_accessToken:data.access_token,
+                github_accessToken: data.access_token,
                 github_refreshToken: data.refresh_token,
-            },{where:{id}})
-        }else{
-            ctx.app.on('database-ready',async ()=>{
-                await database.model('User').update({
-                    github_accessToken:data.access_token,
-                    github_refreshToken: data.refresh_token,
-                },{where:{id}})
-            })
+            }, {where: {id}})
+        } else {
+            ctx.disposes.push(
+                ctx.app.on('database-ready', async () => {
+                    await database.model('User').update({
+                        github_accessToken: data.access_token,
+                        github_refreshToken: data.refresh_token,
+                    }, {where: {id}})
+                }))
         }
         return _ctx.status = 200
     })
-    ctx.command('github [name:string]',"group")
+    ctx.command('github [name:string]', "group")
         .desc('github仓库管理指令')
         .alias('gh')
-        .auth('master',"admins")
+        .auth('master', "admins")
         .option('list', '-l')
         .option('add', '-a')
         .option('delete', '-d')
-        .action(async ({ session, options }, name) => {
+        .action(async ({session, options}, name) => {
             if (options.list) {
-                const names = Object.keys(session.group.github_webhooks||{})
+                const names = Object.keys(session.group.github_webhooks || {})
                 if (!names.length) return '当前没有监听仓库'
                 return names.sort().join('\n')
             }
@@ -76,10 +79,10 @@ export function install(ctx:Context){
                 name = name.toLowerCase()
                 const github_webhooks = session.group.github_webhooks
                 if (options.add) {
-                    if (github_webhooks[name]) return '已添加过仓库 '+ name
-                    const [repo] = await ctx.database.get('github', { name: [name] })
+                    if (github_webhooks[name]) return '已添加过仓库 ' + name
+                    const [repo] = await ctx.database.get('github', {name: [name]})
                     if (!repo) {
-                        const dispose = ctx.middleware((session2 , next) => {
+                        const dispose = ctx.middleware((session2, next) => {
                             dispose()
                             const cqCode = session2.elements.join('')
                             if (cqCode && cqCode !== '.' && cqCode !== '。') return next()
@@ -87,29 +90,29 @@ export function install(ctx:Context){
                                 name: 'github.repos',
                                 session,
                                 args: [name],
-                                options: { add: true, subscribe: true },
+                                options: {add: true, subscribe: true},
                             })
                         })
                         return `尚未添加过仓库 ${name}。发送空行或句号以立即添加并订阅该仓库`
                     }
                     github_webhooks[name] = deepClone(defaultEvents)
-                    await ctx.database.set('Group',{group_id:session.group_id},{github_webhooks})
+                    await ctx.database.set('Group', {group_id: session.group_id}, {github_webhooks})
                     subscribe(name, session.group_id, github_webhooks[name])
                     return '添加成功'
                 } else if (options.delete) {
-                    if (!github_webhooks[name]) return '尚未在当前群聊订阅过仓库'+ name
+                    if (!github_webhooks[name]) return '尚未在当前群聊订阅过仓库' + name
                     delete github_webhooks[name]
-                    await ctx.database.set('Group',{group_id:session.group_id},{github_webhooks})
+                    await ctx.database.set('Group', {group_id: session.group_id}, {github_webhooks})
                     unsubscribe(name, session.group_id)
                     return '删除成功'
                 }
             }
 
-            return session.execute({session,name:'help',args:['github']})
+            return session.execute({session, name: 'help', args: ['github']})
         })
-    ctx.command('github/github.authorize <user:string>','group')
+    ctx.command('github/github.authorize <user:string>', 'group')
         .alias('github.auth')
-        .action(async ({ session }, user) => {
+        .action(async ({session}, user) => {
             if (!user) return '请输入用户名'
             const token = Random.id()
             tokens[token] = session.user_id
@@ -124,11 +127,11 @@ export function install(ctx:Context){
         })
     const repoRegExp = /^[\w.-]+\/[\w.-]+$/
 
-    ctx.command('github/github.repos [name:string]',"group")
+    ctx.command('github/github.repos [name:string]', "group")
         .option('add', '-a')
         .option('delete', '-d')
         .option('subscribe', '-s')
-        .action(async ({ session, options }, name) => {
+        .action(async ({session, options}, name) => {
             if (options.add || options.delete) {
                 if (!name) return '请输入仓库名'
                 if (!repoRegExp.test(name)) return '仓库名无效'
@@ -138,7 +141,7 @@ export function install(ctx:Context){
 
                 name = name.toLowerCase()
                 const url = `https://api.github.com/repos/${name}/hooks`
-                const [repo] = await ctx.database.get('github', { name: [name] })
+                const [repo] = await ctx.database.get('github', {name: [name]})
                 if (options.add) {
                     if (repo) return '重复添加'
                     const secret = Random.id()
@@ -154,7 +157,7 @@ export function install(ctx:Context){
                     } catch (err) {
                         if (!err.response) throw err
                         if (err.response.status === 404) {
-                            return '未找到仓库 '+name
+                            return '未找到仓库 ' + name
                         } else if (err.response.status === 403) {
                             return '访问受限'
                         } else {
@@ -162,20 +165,20 @@ export function install(ctx:Context){
                             return '添加失败'
                         }
                     }
-                    await ctx.database.add('github', { name, id: data.id, secret })
+                    await ctx.database.add('github', {name, id: data.id, secret})
                     if (!options.subscribe) return '添加成功'
                     return session.execute({
                         name: 'github',
                         session,
                         args: [name],
-                        options: { add: true },
+                        options: {add: true},
                     })
                 } else {
                     if (!repo) return '删除失败'
                     try {
                         await ctx.github.request('DELETE', `${url}/${repo.toJSON().id}`, session)
                     } catch (err) {
-                        if ( !err.response) throw err
+                        if (!err.response) throw err
                         if (err.response.status !== 404) {
                             ctx.logger.warn(err)
                             return '删除失败'
@@ -184,12 +187,12 @@ export function install(ctx:Context){
 
                     async function updateChannels() {
                         const groups = await ctx.database.get('Group')
-                        for(const group of groups){
+                        for (const group of groups) {
                             const {github_webhooks} = group.toJSON()
-                            if(!github_webhooks) continue
+                            if (!github_webhooks) continue
                             const shouldUpdate = github_webhooks[name]
                             delete github_webhooks[name]
-                            if(shouldUpdate){
+                            if (shouldUpdate) {
                                 await group.update({github_webhooks})
                             }
                         }
@@ -198,7 +201,7 @@ export function install(ctx:Context){
                     unsubscribe(name)
                     await Promise.all([
                         updateChannels(),
-                        ctx.database.delete('github', { name: [name] }),
+                        ctx.database.delete('github', {name: [name]}),
                     ])
                     return '删除成功'
                 }
@@ -208,17 +211,19 @@ export function install(ctx:Context){
             if (!repos.length) return '当前没有监听的仓库'
             return repos.map(repo => repo.toJSON().name).join('\n')
         })
-    function subscribe(repo: string, group_id: number|string, meta: EventConfig) {
+
+    function subscribe(repo: string, group_id: number | string, meta: EventConfig) {
         (subscriptions[repo] ||= {})[group_id] = meta
     }
 
-    function unsubscribe(repo: string, group_id?: string|number) {
+    function unsubscribe(repo: string, group_id?: string | number) {
         if (!group_id) return delete subscriptions[repo]
         delete subscriptions[repo][group_id]
         if (!Object.keys(subscriptions[repo]).length) {
             delete subscriptions[repo]
         }
     }
+
     async function request(method: Method, url: string, session: Session, body: any, message: string) {
         return ctx.github.request(method, 'https://api.github.com' + url, session, body)
             .then(() => message + '成功')
@@ -227,9 +232,10 @@ export function install(ctx:Context){
                 return message + '失败'
             })
     }
-    ctx.command('github/github.issue [title] [body:text]',"group")
+
+    ctx.command('github/github.issue [title] [body:text]', "group")
         .option('repo', '-r [repo:string]')
-        .action(async ({ session, options }, title, body) => {
+        .action(async ({session, options}, title, body) => {
             if (!options.repo) return '请输入仓库名'
             if (!repoRegExp.test(options.repo)) return '仓库名无效'
             if (!session.user.github_accessToken) {
@@ -241,9 +247,9 @@ export function install(ctx:Context){
                 body,
             }, '创建')
         })
-    ctx.command('github/github.star [repo]',"group")
+    ctx.command('github/github.star [repo]', "group")
         .option('repo', '-r [repo:string]')
-        .action(async ({ session, options }) => {
+        .action(async ({session, options}) => {
             if (!options.repo) return '请输入仓库名'
             if (!repoRegExp.test(options.repo)) return '仓库名无效'
             if (!session.user.github_accessToken) {
@@ -255,8 +261,8 @@ export function install(ctx:Context){
     ctx.disposes.push(ctx.on('database-ready', async () => {
         const channels = await ctx.database.get('Group')
         for (const channel of channels) {
-            const { github_webhooks,group_id }=channel.toJSON()
-            if(!github_webhooks) continue
+            const {github_webhooks, group_id} = channel.toJSON()
+            if (!github_webhooks) continue
             for (const repo in github_webhooks) {
                 subscribe(repo, group_id, github_webhooks[repo])
             }
@@ -267,7 +273,8 @@ export function install(ctx:Context){
     function safeParse(source: string) {
         try {
             return JSON.parse(source)
-        } catch {}
+        } catch {
+        }
     }
 
     ctx.router.post(config.path + '/webhook', async (_ctx) => {
@@ -279,7 +286,7 @@ export function install(ctx:Context){
         if (!payload) return _ctx.status = 400
         const fullEvent = payload.action ? `${event}/${payload.action}` : event
         ctx.logger.debug('received %s (%s)', fullEvent, id)
-        const [data] = await database.get('github', {id:webhookId})
+        const [data] = await database.get('github', {id: webhookId})
         // 202：服务器已接受请求，但尚未处理
         // 在 github.repos -a 时确保获得一个 2xx 的状态码
         if (!data) return _ctx.status = 202
@@ -290,13 +297,13 @@ export function install(ctx:Context){
 
         if (data.toJSON().name !== fullName) {
             // repo renamed
-            await database.set('github', {id:webhookId}, { name: fullName, secret: data.toJSON().secret })
+            await database.set('github', {id: webhookId}, {name: fullName, secret: data.toJSON().secret})
 
             unsubscribe(data.toJSON().name)
             const groups = await ctx.database.get('Group')
-            for(const group of groups){
-                const {github_webhooks,group_id}=group.toJSON()
-                if(!github_webhooks) continue
+            for (const group of groups) {
+                const {github_webhooks, group_id} = group.toJSON()
+                if (!github_webhooks) continue
                 const shouldUpdate = github_webhooks[data.toJSON().name]
                 if (shouldUpdate) {
                     github_webhooks[fullName] = shouldUpdate
@@ -313,7 +320,7 @@ export function install(ctx:Context){
         ctx.emit(`github/${event}`, payload)
     })
     ctx.middleware((session, next) => {
-        if (!session.quote || session.detail_type!=='group') return next()
+        if (!session.quote || session.detail_type !== 'group') return next()
         const body = session.quote.element.join('')
         const payloads = ctx.github.history[session.quote.message_id]
         if (!body || !payloads) return next()
