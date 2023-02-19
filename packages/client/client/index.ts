@@ -73,22 +73,22 @@ export const router = createRouter({
     routes: [],
 })
 
-export const extensions = reactive<Record<string, Context>>({})
+export const extensions = reactive<Record<string, ZhinWeb>>({})
 
 export const routes: Ref<RouteRecordNormalized[]> = ref([])
 
 export type Disposable = () => void
-export type Extension = (client: Context) => void
+export type Extension = (client: ZhinWeb) => void
 
 interface DisposableExtension extends PageExtension {
-    ctx: Context
+    web: ZhinWeb
 }
 
 export function getValue<T>(computed: Computed<T>): T {
     return typeof computed === 'function' ? (computed as any)() : computed
 }
 
-export class Context {
+export class ZhinWeb {
     static app: App
     static pending: Dict<DisposableExtension[]> = {}
 
@@ -141,16 +141,16 @@ export class Context {
             routes.value = router.getRoutes()
         })
         const route = routes.value.find(r => r.name === name)
-        for (const options of Context.pending[name] || []) {
+        for (const options of ZhinWeb.pending[name] || []) {
             this.mergeMeta(route, options)
         }
     }
 
     private mergeMeta(route: RouteRecordNormalized, options: DisposableExtension) {
-        const { ctx, fields, badge } = options
+        const { web, fields, badge } = options
         if (fields) route.meta.fields.push(...fields)
         if (badge) route.meta.badge.push(badge)
-        ctx.disposables.push(() => {
+        web.disposables.push(() => {
             const index = route.meta.badge.indexOf(badge)
             if (index >= 0) route.meta.badge.splice(index, 1)
         })
@@ -159,12 +159,12 @@ export class Context {
     extendsPage(options: PageExtension): void
     extendsPage(options: DisposableExtension) {
         const { name } = options
-        options.ctx = this
+        options.web = this
         const route = router.getRoutes().find(r => r.name === name)
         if (route) {
             this.mergeMeta(route, options)
         } else {
-            (Context.pending[name] ||= []).push(options)
+            (ZhinWeb.pending[name] ||= []).push(options)
         }
     }
 
@@ -177,7 +177,7 @@ export class Context {
     }
 }
 
-export const root = new Context()
+export const root = new ZhinWeb()
 export const message=ElMessage
 export function defineExtension(callback: Extension) {
     return callback
@@ -185,7 +185,7 @@ export function defineExtension(callback: Extension) {
 
 async function loadExtension(path: string) {
     if (extensions[path]) return
-    extensions[path] = new Context()
+    extensions[path] = new ZhinWeb()
 
     if (path.endsWith('.css')) {
         const link = document.createElement('link')

@@ -1,21 +1,21 @@
-import {Plugin, Dict, Context} from 'zhin'
+import {Plugin, Dict, Context, noop} from 'zhin'
 import { dirname, extname, resolve } from 'path'
-import { createReadStream, existsSync, promises as fsp, Stats } from 'fs'
+import { createReadStream, existsSync, promises as fsp,Stats } from 'fs'
 import {createServer} from "vite";
 import vuePlugin from "@vitejs/plugin-vue";
 import { DataService } from './service'
+import {Console} from "./index";
 import { ViteDevServer } from 'vite'
 import koaConnect from 'koa-connect'
 
 class WebService extends DataService<string[]> {
     private vite: ViteDevServer
-    private data: Dict<string> = {}
+    private entries: Dict<string> = {}
     root:string
     private isStarted:boolean=false
 
-    constructor(public plugin:Plugin,ctx: Context, private config: WebService.Config) {
+    constructor(public plugin:Plugin,ctx: Context, private config: Console.Config) {
         super(ctx, 'web')
-
         this.root=config.root?config.root: resolve(dirname(require.resolve('@zhinjs/client/package.json')), 'app')
         this.start()
     }
@@ -35,10 +35,10 @@ class WebService extends DataService<string[]> {
 
     addEntry(entry: string) {
         const key = 'extension-' + Math.random().toFixed(8)
-        this.data[key] = entry
+        this.entries[key] = entry
         this.refresh()
         this.plugin.context.disposes.push(()=>{
-            delete this.data[key]
+            delete this.entries[key]
             this.refresh()
             return true
         })
@@ -46,8 +46,8 @@ class WebService extends DataService<string[]> {
 
     get() {
         const filenames: string[] = []
-        for (const key in this.data) {
-            const local = this.data[key]
+        for (const key in this.entries) {
+            const local = this.entries[key]
             const filename = '/vite/@fs/' + local
             if (extname(local)) {
                 filenames.push(filename)
@@ -63,8 +63,11 @@ class WebService extends DataService<string[]> {
 
     private serveAssets() {
         const { uiPath } = this.config
-        const {root}=this
+
         this.ctx.router.get(uiPath + '(/.+)*', async (ctx, next) => {
+            await next()
+            if (ctx.body || ctx.response.body) return
+
             // add trailing slash and redirect
             if (ctx.path === uiPath && !uiPath.endsWith('/')) {
                 return ctx.redirect(ctx.path + '/')
@@ -76,17 +79,17 @@ class WebService extends DataService<string[]> {
             }
             if (name.startsWith('extension-')) {
                 const key = name.slice(0, 18)
-                if (this.data[key]) return sendFile(this.data[key] + name.slice(18))
+                if (this.entries[key]) return sendFile(this.entries[key][0] + name.slice(18))
             }
-            const filename = resolve(root, name)
-            if (!filename.startsWith(root) && !filename.includes('node_modules')) {
+            const filename = resolve(this.root, name)
+            if (!filename.startsWith(this.root) && !filename.includes('node_modules')) {
                 return ctx.status = 403
             }
-            const stats = await fsp.stat(filename).catch(()=>{})
+            const stats = await fsp.stat(filename).catch(noop)
             if (stats && stats?.isFile()) return sendFile(filename)
             const ext = extname(filename)
-            if (ext && ext !== '.html') return next()
-            const template = await fsp.readFile(resolve(root, 'index.html'), 'utf8')
+            if (ext && ext !== '.html') return ctx.status = 404
+            const template = await fsp.readFile(resolve(this.root, 'index.html'), 'utf8')
             ctx.type = 'html'
             ctx.body = await this.transformHtml(template)
         })
@@ -99,25 +102,29 @@ class WebService extends DataService<string[]> {
         } else {
             template = template.replace(/(href|src)="(?=\/)/g, (_, $1) => `${$1}="${uiPath}`)
         }
-        const headInjection = `<script>oitq_config = ${JSON.stringify(this.ctx.console.global)}</script>`
+        const headInjection = `<script>zhin_config = ${JSON.stringify(this.ctx.console.global)}</script>`
         return template.replace('</title>', '</title>' + headInjection)
     }
 
     private async createVite() {
-        const { root } = this
+        const { cacheDir } = this.config
+        const { createServer } = require('vite') as typeof import('vite')
+        const { default: vue } = require('@vitejs/plugin-vue') as typeof import('@vitejs/plugin-vue')
         this.vite = await createServer({
-            root,
-            base:'/vite/',
+            root: this.root,
+            base: '/vite/',
+            cacheDir: resolve(process.cwd(), cacheDir),
             server: {
                 middlewareMode: true,
                 fs: {
                     strict: false,
-                }
+                },
             },
-            plugins: [vuePlugin()],
+            plugins: [vue()],
             resolve: {
-                dedupe: ['vue'],
+                dedupe: ['vue', 'vue-demi', 'vue-router', 'element-plus', '@vueuse/core', '@popperjs/core', 'marked'],
                 alias: {
+                    '../client.js': '@zhinjs/client',
                     '../vue.js': 'vue',
                     '../vue-router.js': 'vue-router',
                     '../vueuse.js': '@vueuse/core',
@@ -125,7 +132,12 @@ class WebService extends DataService<string[]> {
             },
             optimizeDeps: {
                 include: [
+                    'vue',
+                    'vue-router',
                     'element-plus',
+                    '@vueuse/core',
+                    '@popperjs/core',
+                    'marked',
                 ],
             },
             build: {
@@ -135,11 +147,11 @@ class WebService extends DataService<string[]> {
             },
         })
 
-        this.ctx.router.get('/vite(/.+)*', koaConnect(this.vite.middlewares))
-        this.plugin.context.disposes.push(() => {
-            this.vite.close()
-            return true
-        })
+        this.ctx.router.all('/vite(/.+)*', (ctx) => new Promise((resolve) => {
+            this.vite.middlewares(ctx.req, ctx.res, resolve)
+        }))
+
+        this.ctx.on('dispose', () => this.vite.close())
     }
 }
 

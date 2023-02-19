@@ -16,7 +16,7 @@ export class SocketHandle {
     }
 
     refresh() {
-        Object.keys(this.ctx['services']).forEach(async (name) => {
+        [...this.ctx.app.services.keys()].forEach(async (name) => {
             const service = this.ctx[name] as DataService
             if (!name.startsWith('console.') || !service) return
             const key = name.slice(8)
@@ -38,13 +38,13 @@ export namespace Listener {
 class WsService extends DataService {
     readonly handles: Dict<SocketHandle> = {}
     readonly listeners: Dict<Listener> = {}
-    readonly layer: WebSocketServer
+    readonly wsServer: WebSocketServer
 
-    constructor(public plugin:Plugin,bot: Context, private config: WsService.Config) {
-        super(bot, 'ws')
+    constructor(public plugin:Plugin,ctx: Context, private config: WsService.Config) {
+        super(ctx, 'ws')
 
-        this.layer = bot.router.ws('/'+config.apiPath)
-        this.layer.on('connection',this.onConnection)
+        this.wsServer = ctx.router.ws(config.apiPath)
+        this.wsServer.on('connection',this.onConnection)
     }
 
     broadcast(type: string, body: any, options: DataService.Options = {}) {
@@ -61,7 +61,7 @@ class WsService extends DataService {
     }
 
     stop() {
-        this.layer.close()
+        this.wsServer.close()
     }
 
     private onConnection = (socket: WebSocket) => {
@@ -85,7 +85,6 @@ class WsService extends DataService {
 
 namespace WsService {
     export interface Config {
-        selfUrl?: string
         apiPath?: string
     }
 }

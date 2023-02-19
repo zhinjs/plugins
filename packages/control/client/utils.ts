@@ -14,7 +14,7 @@ export const config = createStorage<AuthConfig>('auth', 1, () => ({
     authType: 'captcha',
 }))
 
-watch(() => store.user, (value,oldValue) => {
+watch(() => store.user, (value) => {
     if (!value) {
         return router.push('/login')
     }

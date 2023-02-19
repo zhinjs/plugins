@@ -34,7 +34,9 @@ function calc24(...args:number[]){
 }
 const ctx=useContext()
 const  gameMaps:Set<string>=new Set<string>()
-ctx.command('24点')
+ctx.command('game.24')
+    .shortcut('24点')
+    .desc('24点游戏')
 .action(async ({session})=>{
     const channel=Zhin.getChannelId(session)
     if(gameMaps.has(channel)) return '当前会话已有进行中的游戏'

@@ -1,4 +1,4 @@
-import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, Schema, useOptions} from "zhin";
+import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, useOptions} from "zhin";
 import '@zhinjs/plugin-database'
 import {EventConfig, addListeners, defaultEvents, CommonPayload} from "./events";
 import {GitHub, Config, ReplyHandler} from "./serve";
@@ -13,17 +13,9 @@ declare module 'zhin' {
         }
     }
 }
-export const name = 'github'
 export const using = ['database']
 
 export function install(ctx: Context) {
-    const config: Config = useOptions('services.github')
-    if (!config) return
-    config.path = sanitize(config.path)
-    const {database} = ctx
-    const {appId, redirect} = config
-    const subscriptions: Dict<Dict<EventConfig>> = {}
-    ctx.service('github', GitHub, config)
     ctx.middleware(async (session, next) => {
         await next()
         const mathReg = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
@@ -33,6 +25,13 @@ export function install(ctx: Context) {
         const src = `https://opengraph.github.com/repo/${owner}/${repo}`
         session.reply(h('image', {src}))
     })
+    const config = Config(useOptions('services.github'))
+    if (!config) return
+    config.path = sanitize(config.path)
+    const {database} = ctx
+    const {appId, redirect} = config
+    const subscriptions: Dict<Dict<EventConfig>> = {}
+    ctx.service('github', GitHub, config)
     const tokens: Dict<number> = Object.create(null)
     ctx.router.get(config.path + '/authorize', async (_ctx) => {
         const token = _ctx.query.state

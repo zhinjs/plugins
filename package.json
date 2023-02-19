@@ -11,6 +11,7 @@
   },
   "workspaces": [
     "games/*",
+    "adapters/*",
     "packages/*",
     "test"
   ],
@@ -42,7 +43,7 @@
     "kleur": "^4.1.5",
     "semver": "^7.3.7",
     "typescript": "^4.7.4",
-    "zhin": "^2.0.2-68"
+    "zhin": "^2.0.2-77"
   },
   "dependencies": {
     "latest-version": "^5.1.0"

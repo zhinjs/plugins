@@ -1,16 +1,7 @@
 import {Context, Schema, useOptions} from "zhin";
-import {install as request} from './request'
-import {Request} from "./request";
 import * as time from './time'
 import * as math from './math'
-export * from './request'
-declare module 'zhin'{
-    namespace Zhin{
-        interface Services{
-            axios:Request
-        }
-    }
-}
+import * as request from './request'
 export const name='utils'
 export const Config=Schema.object({
     time:Schema.boolean(),
@@ -23,11 +14,10 @@ export function install(ctx:Context){
         .desc('公共工具')
     config.time!==false && ctx.plugin(time)
     config.math!==false && ctx.plugin(math)
-    request(ctx,config)
+    ctx.plugin(request)
 }
 export namespace Utils{
     export interface Config{
-        request?:Request.Config
         time?:boolean
         math?:boolean
     }

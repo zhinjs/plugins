@@ -1,19 +1,17 @@
-import {Context,store,send,message,router,defineExtension} from "@zhinjs/client";
+import {ZhinWeb,store,send,message,router,defineExtension} from "@zhinjs/client";
 import { config } from './utils'
-import Login from './pages/login.vue'
-import Profile from './tookit/profile.vue'
 
-export default defineExtension((ctx:Context)=>{
+export default defineExtension((web:ZhinWeb)=>{
     // 在这儿添加路由
     if (config.token && config.expire > Date.now()) {
         send('login/token', Number(config.userId), config.token).catch(e => {
             message.error(typeof e==='string'?e:e.message)
         })
     }
-    ctx.disposables.push(
+    send('config')
+    web.disposables.push(
         router.beforeEach((route) => {
             if ((route.meta.authority || route.meta.fields.includes('user')) && !store.user) {
-                // handle router.back()
                 return history.state.forward === '/login' ? '/' : '/login'
             }
 
@@ -23,32 +21,24 @@ export default defineExtension((ctx:Context)=>{
             }
         }))
 
-    ctx.addPage({
+    web.addPage({
         path: '/login',
         name: '登录',
         icon: 'avatar',
         position: 'hidden',
-        component: Login,
+        component: ()=>import('./pages/login.vue'),
     })
-    ctx.addPage({
-        path:'/bot',
-        name:'机器人配置',
+    web.addPage({
+        path:'/config',
+        name:'配置管理',
         icon:'tools',
-        fields:['user'],
+        fields:['config'],
         position:'left',
-        component:()=>import('./pages/bot.vue')
+        component:()=>import('./pages/config.vue')
     })
-    ctx.addPage({
-        path:'/plugins',
-        name:'插件管理',
-        icon:'tools',
-        fields:['plugins'],
-        position:'left',
-        component:()=>import('./pages/plugins.vue')
-    })
-    ctx.addToolkit({
+    web.addToolkit({
         name: '用户资料',
         icon: 'user',
-        component: Profile,
+        component: ()=>import('./toolkit/profile.vue'),
     })
 })

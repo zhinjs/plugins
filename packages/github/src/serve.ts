@@ -1,7 +1,6 @@
-import {Context, Dict, Session, h, Schema} from "zhin";
+import {Context, Dict, Session, h, Schema,Request} from "zhin";
 import {DataTypes} from "sequelize";
 import { Method } from 'axios'
-import {Request} from "@zhinjs/plugin-utils";
 import {GithubTable} from "./models/github";
 import {EventConfig} from './events'
 export type ReplyPayloads = {
@@ -46,7 +45,7 @@ export class GitHub{
     public history: Dict<ReplyPayloads> = Object.create(null)
     private http: Request
     constructor(public ctx:Context,public config:Config) {
-        this.http=ctx.axios.extend({})
+        this.http=ctx.request.extend({})
         if(ctx.database){
             this.init()
         }
@@ -146,9 +145,9 @@ export const Config=Schema.object({
     appSecret:Schema.string().description('Github AppSecret').required(true),
     messagePrefix:Schema.string().description('消息前缀'),
     redirect:Schema.string().description('请求回调地址').default('/redirect'),
-    promptTimeout:Schema.string().description('会话超时时间'),
-    replyTimeout:Schema.string().description('回复超时时间'),
-    requestTimeout:Schema.string().description('请求超时时间'),
+    promptTimeout:Schema.number().description('会话超时时间').default(60000),
+    replyTimeout:Schema.number().description('回复超时时间').default(60000),
+    requestTimeout:Schema.number().description('请求超时时间').default(60000),
 })
 export class ReplyHandler {
     constructor(public github: GitHub, public ctxEvent: Session, public content?: string) {}

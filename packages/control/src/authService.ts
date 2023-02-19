@@ -40,7 +40,6 @@ export type UserUpdate = Partial<Pick<UserTable.Types, 'name' | 'password'>>
 const authFields = ['name', 'authority', 'user_id', 'expire', 'token'] as (keyof UserAuth)[]
 
 function setAuthUser(handle: SocketHandle, value: UserAuth) {
-    console.log(value)
     handle.user = value
     handle.send({ type: 'data', body: { key: 'user', value } })
     handle.refresh()
@@ -50,7 +49,7 @@ function setAuthUser(handle: SocketHandle, value: UserAuth) {
 export class AuthService extends DataService<UserAuth> {
     static using = ['console', 'database'] as const
 
-    constructor(public plugin: Plugin,ctx:Context, private config: AuthService.Config) {
+    constructor(ctx:Context, private config: AuthService.Config) {
         super(ctx, 'user')
         if(ctx.database){
             ctx.database.extend('User', {

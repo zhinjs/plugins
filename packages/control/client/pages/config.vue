@@ -1,12 +1,12 @@
 <template>
   <div class="plugin-manage">
-    插件管理
+    配置管理
   </div>
 </template>
 
 <script>
 export default {
-  name: "plugins"
+  name: "配置管理"
 }
 </script>
 

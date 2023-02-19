@@ -55,12 +55,11 @@ export function install(ctx: Context) {
     ctx.command('qa [question:string] [answer]')
         .desc('问答管理')
         .option('list', '-l 查看问答列表')
-        .option('detail', '-d 查看指定教学详情')
+        .option('info', '-i <id:string> 查看指定教学详情')
         .option('search', '-s <keyword:string> 搜索关键词')
-        .option('remove', '-r 删除指定id的教学')
-        .option('id', '-i <id:string> 操作id', {hidden: true})
+        .option('delete', '-d <id:string> 删除指定id的教学')
         .option('regexp', '-x 是否为正则匹配')
-        .option('redirect', '=> <question:string> 重定向到问题')
+        .option('redirect', '=> <question:string> 重定向到指定问题')
         .option('probability', '-p <probability:number> 触发概率')
         .option('trigger', '-t [trigger:string] 触发环境')
         .option('page', '/ <page:integer> 页码')
@@ -131,27 +130,27 @@ export function install(ctx: Context) {
                 const {rows,count}=filterResult(data)
                 return template('teach.list', rows.join('\n'), template('teach.pagination', options.page || 1, Math.ceil(count / 15), count))
             }
-            if (options.detail) {
+            if (options.info) {
                 const teach = await ctx.database.models.QA.findOne({
                     attributes: ['id', 'question', 'answer', 'isReg', 'redirect', 'probability', 'belongs'],
                     where: {
-                        id: options.id
+                        id: options.info
                     }
                 })
                 if (!teach) {
-                    return template('teach.404', 'ID', options.id)
+                    return template('teach.404', 'ID', options.info)
                 }
                 const dialogue = teach.toJSON()
-                return template('teach.detail', options.id, transformDialogue(dialogue))
+                return template('teach.detail', options.info, transformDialogue(dialogue))
             }
-            if (options.remove) {
+            if (options.delete) {
                 const dialogue = await ctx.database.models.QA.destroy({
                     where: {
-                        id: options.id
+                        id: options.delete
                     }
                 })
                 if (dialogue) {
-                    return template('teach.remove', options.id)
+                    return template('teach.remove', options.delete)
                 }
             }
             if (q) {
@@ -159,7 +158,7 @@ export function install(ctx: Context) {
                     isReg: !!options.regexp
                 }
                 if (a) {
-                    data.answer = a.toString()
+                    data.answer = a.join('')
                 }
                 if (options.probability) {
                     data.probability = options.probability

@@ -10,9 +10,9 @@ export function install(ctx:Context){
             session.reply(e.message)
         }
     })
-    ctx.command('chess',"group")
+    ctx.command('game.chess',"group")
         .desc('中国象棋游戏')
-    ctx.command('chess/chess.start',"group")
+    ctx.command('game.chess/chess.start',"group")
         .desc('开始一局象棋游戏')
         .shortcut('下象棋')
         .action(async ({session})=>{
@@ -24,7 +24,7 @@ export function install(ctx:Context){
             const userCamp=chess.players.get(session.sender.user_id)
             return chess.output(`你被随机分配到${userCamp}`)
         })
-    ctx.command('chess/chess.exit',"group")
+    ctx.command('game.chess/chess.exit',"group")
         .desc('结束当前群聊的象棋对局')
         .shortcut('结束对局')
         .action(async ({session,bot})=>{
@@ -43,7 +43,7 @@ export function install(ctx:Context){
                 return '非对局人员和管理员无法结束对局'
             }
         })
-    ctx.command('chess/chess.revert',"group")
+    ctx.command('game.chess/chess.revert',"group")
         .desc('悔棋')
         .shortcut('悔棋')
         .action(({session})=>{
@@ -54,7 +54,7 @@ export function install(ctx:Context){
                 return chess.revert(session)
             }
         })
-    ctx.command('chess/chess.tips [input:string]',"group")
+    ctx.command('game.chess/chess.tips [input:string]',"group")
         .desc('给出指定棋子的可走位置图')
         .shortcut(/^提示(.+)/,{args:['$1']})
         .action(({session},input)=>{
