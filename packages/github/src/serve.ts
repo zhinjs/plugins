@@ -89,7 +89,7 @@ export class GitHub{
             data,
             headers: {
                 accept: 'application/vnd.github.v3+json',
-                authorization: `token ${replyMsg.user.github_accessToken}`,
+                authorization: `token ${replyMsg.member.github_accessToken}`,
                 ...headers,
             },
             timeout: this.config.requestTimeout,
@@ -98,14 +98,14 @@ export class GitHub{
     async authorize(session: Session, message: string) {
         const name = await session.prompt.text(message)
         if (name) {
-            await session.execute({ name: 'github.authorize',session:session as any, args: [name] })
+            await session.execute({ name: 'github.authorize',session:session as any,elements:[], args: [name] })
         } else {
             await session.reply('输入超时')
         }
     }
     async request(method: Method, url: string, session:Session, body?: any, headers?: Dict) {
         if(session.detail_type!=='group') return '只能在群聊中使用'
-        if (!session.user.github_accessToken) {
+        if (!session.member.github_accessToken) {
             return this.authorize(session, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
         }
 
@@ -117,11 +117,11 @@ export class GitHub{
 
         try {
             const data = await this.getTokens({
-                refresh_token: session.user.github_refreshToken,
+                refresh_token: session.member.github_refreshToken,
                 grant_type: 'refresh_token',
             })
-            session.user.github_accessToken = data.access_token
-            session.user.github_refreshToken = data.refresh_token
+            session.member.github_accessToken = data.access_token
+            session.member.github_refreshToken = data.refresh_token
         } catch {
             return this.authorize(session, '令牌已失效，需要重新授权。输入你的 GitHub 用户名。')
         }

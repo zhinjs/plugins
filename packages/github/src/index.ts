@@ -36,8 +36,8 @@ export function install(ctx: Context) {
     ctx.router.get(config.path + '/authorize', async (_ctx) => {
         const token = _ctx.query.state
         if (!token || Array.isArray(token)) return _ctx.status = 400
-        const id = tokens[token]
-        if (!id) return _ctx.status = 403
+        const user_id = tokens[token]
+        if (!user_id) return _ctx.status = 403
         delete tokens[token]
         const {code, state} = _ctx.query
         const data = await ctx.github.getTokens({code, state, redirect_uri: redirect})
@@ -45,14 +45,14 @@ export function install(ctx: Context) {
             await database.model('User').update({
                 github_accessToken: data.access_token,
                 github_refreshToken: data.refresh_token,
-            }, {where: {id}})
+            }, {where: {user_id}})
         } else {
             ctx.disposes.push(
                 ctx.app.on('database-ready', async () => {
                     await database.model('User').update({
                         github_accessToken: data.access_token,
                         github_refreshToken: data.refresh_token,
-                    }, {where: {id}})
+                    }, {where: {user_id}})
                 }))
         }
         return _ctx.status = 200
@@ -88,6 +88,7 @@ export function install(ctx: Context) {
                             return session.execute({
                                 name: 'github.repos',
                                 session,
+                                elements:[],
                                 args: [name],
                                 options: {add: true, subscribe: true},
                             })
@@ -107,7 +108,7 @@ export function install(ctx: Context) {
                 }
             }
 
-            return session.execute({session, name: 'help', args: ['github']})
+            return session.execute({session, name: 'help',elements:[], args: ['github']})
         })
     ctx.command('github/github.authorize <user:string>', 'group')
         .alias('github.auth')
@@ -134,7 +135,7 @@ export function install(ctx: Context) {
             if (options.add || options.delete) {
                 if (!name) return '请输入仓库名'
                 if (!repoRegExp.test(name)) return '仓库名无效'
-                if (!session.user.github_accessToken) {
+                if (!session.member.github_accessToken) {
                     return ctx.github.authorize(session, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
                 }
 
@@ -150,7 +151,7 @@ export function install(ctx: Context) {
                             events: ['*'],
                             config: {
                                 secret,
-                                url: ctx.app.options.plugins.http.selfUrl + config.path + '/webhook',
+                                url: ctx.app.options.self_url + config.path + '/webhook',
                             },
                         })
                     } catch (err) {
@@ -169,6 +170,7 @@ export function install(ctx: Context) {
                     return session.execute({
                         name: 'github',
                         session,
+                        elements:[],
                         args: [name],
                         options: {add: true},
                     })
@@ -237,7 +239,7 @@ export function install(ctx: Context) {
         .action(async ({session, options}, title, body) => {
             if (!options.repo) return '请输入仓库名'
             if (!repoRegExp.test(options.repo)) return '仓库名无效'
-            if (!session.user.github_accessToken) {
+            if (!session.member.github_accessToken) {
                 return ctx.github.authorize(session, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
             }
 
@@ -251,7 +253,7 @@ export function install(ctx: Context) {
         .action(async ({session, options}) => {
             if (!options.repo) return '请输入仓库名'
             if (!repoRegExp.test(options.repo)) return '仓库名无效'
-            if (!session.user.github_accessToken) {
+            if (!session.member.github_accessToken) {
                 return ctx.github.authorize(session, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
             }
 

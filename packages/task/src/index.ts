@@ -90,6 +90,7 @@ export function install(ctx: Context) {
                 try {
                     const result = await session.execute({
                         session,
+                        elements:[],
                         name: 'exec',
                         args: [step.template]
                     })

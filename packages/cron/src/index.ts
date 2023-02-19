@@ -29,6 +29,7 @@ export function install(ctx: Context, config: Config={}) {
             let result=await session.execute({
                 session:session as any,
                 name:'exec',
+                elements:[],
                 args:[command]
             })
             if(result && typeof result!=='boolean')await ctx.app.sendMsg(Zhin.getChannelId(session),result)

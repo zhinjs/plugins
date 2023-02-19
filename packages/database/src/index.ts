@@ -70,8 +70,13 @@ export const Config = Schema.object({
 export function install(ctx: Context) {
     const options = Config(useOptions('services.database'))
     ctx.service('database', Database, options as Options)
-    // 这儿可以定义表结构
-    ctx.app.emit('database-created')
+    if(ctx.app.isReady){
+        ctx.database.start()
+    }else{
+        ctx.app.on('ready',()=>{
+            ctx.database.start()
+        })
+    }
     ctx.disposes.unshift(() => {
         ctx.database.disconnect()
     })
@@ -86,9 +91,6 @@ class Database {
         this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
         this.define('User', UserTable.model)
         this.define('Group', GroupTable.model)
-        this.ctx.setTimeout(() => {
-            this.start()
-        }, 200)
     }
 
     async start() {
