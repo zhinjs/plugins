@@ -1,5 +1,5 @@
 {
-  "name": "@zhinjs/plugin-chess",
+  "name": "@zhinjs/plugin-adapter-mock",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "version": "0.0.10",
@@ -7,7 +7,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "games/chess"
+    "directory": "adapters/mock"
   },
   "keywords": [
     "chess",

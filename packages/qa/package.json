@@ -3,7 +3,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "version": "0.0.9",
-  "description": "task plugin",
+  "description": "qa plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",

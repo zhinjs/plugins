@@ -4,8 +4,9 @@
     "baseUrl": ".",
     "paths": {
       "@zhinjs/plugin-*": [
+        "adapters/*/src",
         "packages/*/src",
-        "games/*/src"
+        "games/*/src",
       ]
     }
   }

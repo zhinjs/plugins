@@ -89,7 +89,7 @@ export function echo(ctx: Context) {
 }
 
 export function send(ctx: Context) {
-    ctx.command('common/send <message>')
+    ctx.command('common/send <message:any>')
         .desc('向当前上下文发送消息')
         .option('user', '-u [user:number]  发送到用户')
         .option('group', '-g [group:number]  发送到群')

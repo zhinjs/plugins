@@ -1,23 +1,30 @@
 {
-  "name": "@zhinjs/plugin-chess",
+  "name": "@zhinjs/plugin-chatgpt",
   "main": "lib/index.js",
+  "setup": true,
+  "schema": {
+    "plugins.chatgpt": {
+      "type": "string",
+      "required": true,
+      "message": "chatGPT api秘钥"
+    }
+  },
   "types": "lib/index.d.ts",
-  "version": "0.0.10",
-  "description": "chess game",
+  "version": "0.0.9",
+  "description": "chatgpt plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "games/chess"
+    "directory": "plugins/chatGPT"
   },
   "keywords": [
-    "chess",
-    "game",
+    "chatgpt",
+    "plugin",
     "zhin"
   ],
   "files": [
     "lib/**/*.js",
     "lib/**/*.d.ts",
-    "lib/**/*.ttf",
     "lib/**/LICENSE"
   ],
   "author": "凉菜 <admin@liucl.cn>",
@@ -27,6 +34,7 @@
   },
   "homepage": "https://github.com/zhinjs/plugins#readme",
   "dependencies": {
-    "canvas": "^2.10.1"
+    "eventsource-parser": "^0.1.0",
+    "expiry-map": "^2.0.0"
   }
 }

@@ -1,4 +1,4 @@
-import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, useOptions} from "zhin";
+import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, useOptions, ChannelId} from "zhin";
 import '@zhinjs/plugin-database'
 import {EventConfig, addListeners, defaultEvents, CommonPayload} from "./events";
 import {GitHub, Config, ReplyHandler} from "./serve";
@@ -359,7 +359,7 @@ export function install(ctx: Context) {
             if (!result) return
             // step 3: broadcast message
             ctx.logger.info('broadcast', result[0])
-            const messageIds = await ctx.broadcast(`group:${targets}`, (config.messagePrefix || '[GitHub]') + result[0])
+            const messageIds = await ctx.broadcast(targets.map(target=>`group:${target}`) as ChannelId[], (config.messagePrefix || '[GitHub]') + result[0])
 
             // step 4: save message ids for interactions
             for (const {message_id} of messageIds) {

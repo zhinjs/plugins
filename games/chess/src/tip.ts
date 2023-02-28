@@ -1,4 +1,3 @@
-import {CampType, PieceType} from './enum'
 import {Pos} from "./types";
 import {Canvas, createCanvas} from "canvas";
 
@@ -12,7 +11,7 @@ class Tip {
 
     constructor(size: number, pos: Pos) {
         this._size = size;
-        this._canvas = createCanvas(this._size,this._size);
+        this._canvas = createCanvas(this._size, this._size);
         this._pos = pos;
         this.draw();
     }
@@ -52,4 +51,4 @@ class Tip {
 
 }
 
-export { Tip }
+export {Tip}
