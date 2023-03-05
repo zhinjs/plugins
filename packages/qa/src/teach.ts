@@ -59,7 +59,7 @@ export function install(ctx: Context) {
         .option('search', '-s <keyword:string> 搜索关键词')
         .option('delete', '-d <id:string> 删除指定id的教学')
         .option('regexp', '-x 是否为正则匹配')
-        .option('redirect', '=> <question:string> 重定向到指定问题')
+        .option('redirect', '-> <question:string> 重定向到指定问题')
         .option('probability', '-p <probability:number> 触发概率')
         .option('trigger', '-t [trigger:string] 触发环境')
         .option('page', '/ <page:integer> 页码')

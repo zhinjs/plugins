@@ -17,8 +17,8 @@ declare module '@zhinjs/plugin-console'{
 function setData(handler:SocketHandle,path:string,value:any){
     if (!handler.user) throw new Error('请先登录。')
     if(handler.user.authority!==7) throw new Error('权限不足')
-    lodash.set(this.ctx.app.options,path,value)
-    handler.send({ type: 'data', body: { key: 'config', value:this.ctx.app.options } })
+    lodash.set(this.ctx.zhin.options,path,value)
+    handler.send({ type: 'data', body: { key: 'config', value:this.ctx.zhin.options } })
     handler.refresh()
 }
 export class ConfigService extends DataService<{}>{
@@ -36,13 +36,13 @@ export class ConfigService extends DataService<{}>{
             return '修改成功'
         })
         this.ctx.console.addListener('config',function () {
-            this.send({ type: 'data', body: { key: 'config', value:this.ctx.app.options } })
+            this.send({ type: 'data', body: { key: 'config', value:this.ctx.zhin.options } })
         })
         this.ctx.console.addListener('config/delete', function (path) {
             if (!this.user) throw new Error('请先登录。')
             if(this.user.authority!==7) throw new Error('权限不足')
-            lodash.unset(this.ctx.app.options,path)
-            this.send({ type: 'data', body: { key: 'config', value:this.ctx.app.options } })
+            lodash.unset(this.ctx.zhin.options,path)
+            this.send({ type: 'data', body: { key: 'config', value:this.ctx.zhin.options } })
             this.refresh()
             return '删除成功'
         })

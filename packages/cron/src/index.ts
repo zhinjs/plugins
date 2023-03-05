@@ -12,7 +12,7 @@ export function install(ctx: Context, config: Config={}) {
     if(ctx.database){
         ctx.database.define('cron',CronTable.model)
     }
-    ctx.disposes.push(ctx.app.on('database-created',()=>{
+    ctx.disposes.push(ctx.zhin.on('database-created',()=>{
         ctx.database.define('cron',CronTable.model)
     }))
     async function hasCron(id: number) {
@@ -32,7 +32,7 @@ export function install(ctx: Context, config: Config={}) {
                 elements:[],
                 args:[command]
             })
-            if(result && typeof result!=='boolean')await ctx.app.sendMsg(Zhin.getChannelId(session),result)
+            if(result && typeof result!=='boolean')await ctx.zhin.sendMsg(Zhin.getChannelId(session),result)
             if (!lastCall || !interval) return
             lastCall = new Date()
             await ctx.database.set('cron',{id},{ lastCall })

@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-admin",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "知音管理插件",
   "repository": {
     "type": "git",

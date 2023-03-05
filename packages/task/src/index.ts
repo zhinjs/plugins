@@ -110,11 +110,11 @@ class Tasks {
             ctx.database.define('TaskStep', TaskStep)
         }
         ctx.disposes.push(
-            ctx.app.on('database-created', () => {
+            ctx.zhin.on('database-created', () => {
                 ctx.database.define('Task', Task)
                 ctx.database.define('TaskStep', TaskStep)
             }),
-            ctx.app.on('database-mounted', () => {
+            ctx.zhin.on('database-mounted', () => {
                 const {Task, TaskStep} = ctx.database.models
                 Task.hasMany(TaskStep, {as: 'steps'})
                 TaskStep.belongsTo(Task)

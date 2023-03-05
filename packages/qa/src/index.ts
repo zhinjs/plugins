@@ -12,7 +12,7 @@ export function install(ctx: Context) {
         ctx.database.define('QA', QA)
     }
     ctx.disposes.push(
-        ctx.app.on('database-created', () => {
+        ctx.zhin.on('database-created', () => {
             ctx.database.define('QA', QA)
         }))
     ctx.plugin(teach)

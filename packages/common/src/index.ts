@@ -26,17 +26,10 @@ export function install(ctx: Context) {
     ctx.command('code <pluginName:string>')
         .desc('输出指定插件源码')
         .action((_, pluginName) => {
-            if (!pluginName) return
-            try {
-
-                const plugin = ctx.plugin(pluginName)
-                if (plugin instanceof Context) {
-                    return
-                }
-                return plugin.options.install.toString().replace(/(\\u.{4})+/g, (str) => eval(`'${str}'`))
-            } catch {
-                return '未找到插件'
-            }
+            const plugins=ctx.zhin.getInstalledModules("plugin")
+            const plugin=plugins.find(p=>p.name===pluginName || p.fullName===pluginName)
+            if(!plugin) return '未找到插件'
+            return plugin.install.toString().replace(/(\\u.{4})+/g, (str) => eval(`'${str}'`))
         })
     ctx.command('common')
         .desc('基础功能')

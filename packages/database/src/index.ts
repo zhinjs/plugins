@@ -70,10 +70,10 @@ export const Config = Schema.object({
 export function install(ctx: Context) {
     const options = Config(useOptions('services.database'))
     ctx.service('database', Database, options as Options)
-    if(ctx.app.isReady){
+    if(ctx.zhin.isReady){
         ctx.database.start()
     }else{
-        ctx.app.on('ready',()=>{
+        ctx.zhin.on('ready',()=>{
             ctx.database.start()
         })
     }
@@ -94,15 +94,15 @@ class Database {
     }
 
     async start() {
-        await this.ctx.app.emitSync('database-created')
-        this.ctx.app.listeners('database-create').map((l)=>console.log(l+''))
+        await this.ctx.zhin.emitSync('database-created')
+        this.ctx.zhin.listeners('database-create').map((l)=>console.log(l+''))
         Object.entries(this.modelDecl).forEach(([name, decl]) => {
             this.sequelize.define(name, decl, {timestamps: false})
         })
-        await this.ctx.app.emitSync('database-mounted')
+        await this.ctx.zhin.emitSync('database-mounted')
         // 这儿可以定义表关系
         await this.sequelize.sync({alter: true})
-        await this.ctx.app.emitSync('database-ready')
+        await this.ctx.zhin.emitSync('database-ready')
         this.isReady = true
         this.connect()
     }
@@ -136,7 +136,7 @@ class Database {
     }
 
     connect() {
-        const dispose = this.ctx.app.on('before-message', async (session) => {
+        const dispose = this.ctx.zhin.on('before-message', async (session) => {
             const {user_id, user_name = ''} = session
             const [userInfo] = await this.models.User.findOrCreate({
                 where: {
@@ -180,7 +180,7 @@ class Database {
     }
 
     async disconnect() {
-        await this.ctx.app.emitSync('database-disposed')
+        await this.ctx.zhin.emitSync('database-disposed')
         while (this.disposes.length) {
             this.disposes.shift()()
         }

@@ -48,7 +48,7 @@ export function install(ctx: Context) {
             }, {where: {user_id}})
         } else {
             ctx.disposes.push(
-                ctx.app.on('database-ready', async () => {
+                ctx.zhin.on('database-ready', async () => {
                     await database.model('User').update({
                         github_accessToken: data.access_token,
                         github_refreshToken: data.refresh_token,
@@ -151,7 +151,7 @@ export function install(ctx: Context) {
                             events: ['*'],
                             config: {
                                 secret,
-                                url: ctx.app.options.self_url + config.path + '/webhook',
+                                url: ctx.zhin.options.self_url + config.path + '/webhook',
                             },
                         })
                     } catch (err) {
@@ -259,7 +259,7 @@ export function install(ctx: Context) {
 
             return request('PUT', `/user/starred/${options.repo}`, session, null, '操作')
         })
-    ctx.disposes.push(ctx.on('database-ready', async () => {
+    ctx.disposes.push(ctx.zhin.on('database-ready', async () => {
         const channels = await ctx.database.get('Group')
         for (const channel of channels) {
             const {github_webhooks, group_id} = channel.toJSON()

@@ -49,7 +49,7 @@ export class GitHub{
         if(ctx.database){
             this.init()
         }
-        ctx.disposes.push(this.ctx.app.on('database-created',()=>{
+        ctx.disposes.push(this.ctx.zhin.on('database-created',()=>{
             this.init()
         }))
     }

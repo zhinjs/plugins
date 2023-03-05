@@ -37,7 +37,7 @@ export function install(ctx:Context){
                     case 'image':
                         return h('image',{src:`base64://${Buffer.from(res,'binary').toString('base64')}`})
                     case 'video':
-                        const fileUrl=path.join(ctx.app.options.data_dir,`${new Date().getTime()}.mp4`)
+                        const fileUrl=path.join(ctx.zhin.options.data_dir,`${new Date().getTime()}.mp4`)
                         await fs.promises.writeFile(fileUrl, res, 'binary');
                         return h('video',{src:fileUrl})
                     default:

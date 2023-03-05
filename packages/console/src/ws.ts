@@ -16,7 +16,7 @@ export class SocketHandle {
     }
 
     refresh() {
-        [...this.ctx.app.services.keys()].forEach(async (name) => {
+        [...this.ctx.zhin.services.keys()].forEach(async (name) => {
             const service = this.ctx[name] as DataService
             if (!name.startsWith('console.') || !service) return
             const key = name.slice(8)

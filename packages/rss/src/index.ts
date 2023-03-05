@@ -24,7 +24,7 @@ export function install(ctx: Context) {
         ctx.database.define('Rss', Feed.table)
     }
     ctx.disposes.push(
-        ctx.app.on('database-created', () => {
+        ctx.zhin.on('database-created', () => {
             ctx.database.define('Rss', Feed.table)
         })
     )
