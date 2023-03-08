@@ -1,4 +1,4 @@
-import {Context,template} from "zhin";
+import {Context, h, template} from "zhin";
 import {Op} from "sequelize";
 import {QA} from "./models";
 
@@ -116,7 +116,7 @@ export function install(ctx: Context) {
                 }
                 const data = await ctx.database.models.QA.findAll(condition)
                 const {rows,count}=filterResult(data)
-                return template('teach.search', options.search, rows.join('\n'), template('teach.pagination', options.page || 1, Math.ceil(count / 15), count))
+                return h('text',{text:template('teach.search', options.search, rows.join('\n'), template('teach.pagination', options.page || 1, Math.ceil(count / 15), count))})
             }
             if (options.list) {
                 const condition = {
@@ -128,7 +128,7 @@ export function install(ctx: Context) {
                 }
                 const data = await ctx.database.models.QA.findAll(condition)
                 const {rows,count}=filterResult(data)
-                return template('teach.list', rows.join('\n'), template('teach.pagination', options.page || 1, Math.ceil(count / 15), count))
+                return h('text',{text:template('teach.list', rows.join('\n'), template('teach.pagination', options.page || 1, Math.ceil(count / 15), count))})
             }
             if (options.info) {
                 const teach = await ctx.database.models.QA.findOne({
@@ -141,7 +141,7 @@ export function install(ctx: Context) {
                     return template('teach.404', 'ID', options.info)
                 }
                 const dialogue = teach.toJSON()
-                return template('teach.detail', options.info, transformDialogue(dialogue))
+                return h('text',{text:template('teach.detail', options.info, transformDialogue(dialogue))})
             }
             if (options.delete) {
                 const dialogue = await ctx.database.models.QA.destroy({
