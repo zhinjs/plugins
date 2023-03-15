@@ -6,13 +6,16 @@
     "compile": "ts-node ./build/compile.ts",
     "dtsc": "ts-node ./build/dtsc.ts",
     "build": "npm run compile && npm run dtsc",
+    "clean": "ts-node ./build/clean.ts",
     "pub": "ts-node ./build/publish.ts",
     "dev": "npm run dev -w test"
   },
   "workspaces": [
-    "games/*",
-    "adapters/*",
-    "packages/*",
+    "packages/games/*",
+    "packages/adapters/*",
+    "packages/services/*",
+    "packages/plugins/*",
+    "packages/web/*",
     "test"
   ],
   "repository": {
@@ -43,10 +46,9 @@
     "kleur": "^4.1.5",
     "semver": "^7.3.7",
     "typescript": "^4.7.4",
-    "zhin": "^2.0.3-2"
+    "zhin": "^2.0.3-19"
   },
   "dependencies": {
-    "icqq": "^0.0.29",
     "latest-version": "^5.1.0"
   }
 }

@@ -1,0 +1,31 @@
+{
+  "name": "@zhinjs/plugin-game-gobang",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "version": "0.0.1",
+  "description": "五子棋 游戏",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhinjs/plugins.git",
+    "directory": "packages/games/gobang"
+  },
+  "keywords": [
+    "五子棋",
+    "gobang",
+    "game",
+    "plugin",
+    "zhin"
+  ],
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.ttf",
+    "lib/**/LICENSE"
+  ],
+  "author": "凉菜 <admin@liucl.cn>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhinjs/plugins/issues"
+  },
+  "homepage": "https://github.com/zhinjs/plugins#readme"
+}

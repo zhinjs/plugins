@@ -6,15 +6,16 @@ import { SpawnOptions } from 'child_process'
 export const cwd = resolve(__dirname, '..')
 
 const categories = [
-    'packages',
-    'games'
+    'packages/games',
+    'packages/adapters',
+    'packages/services',
+    'packages/web',
+    'packages/plugins',
 ]
 const coreLib=[
-    'http',
-    "prompt",
-    'console',
-    'database',
-    'client'
+    'web/console',
+    'services/database',
+    'web/client'
 ].map(lib=>`packages/${lib}`)
 export async function getPackages(args: readonly string[]) {
     const folders = (await Promise.all(categories.map(async (seg) => {
