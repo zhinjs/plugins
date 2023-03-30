@@ -8,7 +8,7 @@ interface StorageData<T> {
 }
 
 export function createStorage<T extends object>(key: string, version: number, fallback?: () => T) {
-    const storage = useLocalStorage('oitq.console.' + key, {} as StorageData<T>)
+    const storage = useLocalStorage('zhin.console.' + key, {} as StorageData<T>)
     const initial = fallback ? fallback() : {} as T
     if (storage.value['version'] !== version) {
         storage.value = { version, data: initial }

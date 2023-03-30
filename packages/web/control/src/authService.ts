@@ -1,4 +1,4 @@
-import {Awaitable, Plugin, omit, pick, Time, Context} from 'zhin'
+import {Awaitable, omit, pick, Time, Context} from 'zhin'
 import { DataService, SocketHandle } from '@zhinjs/plugin-console'
 import {UserTable,DataTypes} from '@zhinjs/plugin-database'
 import { v4 } from 'uuid'
@@ -80,7 +80,6 @@ export class AuthService extends DataService<UserAuth> {
             if (!user.expire || user.expire < Date.now()) {
                 user.token = v4()
                 user.expire = Date.now() + config.authTokenExpire
-                console.log(user)
                 await userInstance.update(pick(user, ['token', 'expire']))
             }
             setAuthUser(this, omit(user, ['password']))
@@ -122,9 +121,9 @@ export class AuthService extends DataService<UserAuth> {
                 if (!user.expire || user.expire < Date.now()) {
                     user.token = v4()
                     user.expire = Date.now() + config.authTokenExpire
-                    await ctx.database.model("User").update({token:v4(),expire:Date.now() + config.authTokenExpire},{where:{user_id:user.user_id}})
+                    await ctx.database.model("User").update({token:user.token,expire:user.expire},{where:{user_id:user.user_id}})
                 }
-                return setAuthUser(state[2], user)
+                return setAuthUser(state[2], omit(user,['password']))
             }
             next()
         })

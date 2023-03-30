@@ -21,7 +21,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     constructor(zhin: Zhin, public adapter: MockAdapter, options: BotOptions) {
         super(zhin, adapter, options);
         this.self_id = Random.id(10)
-        this.internal = zhin.router.ws(`/mock/${this.self_id}`)
+        this.internal = zhin.service('router').ws(`/mock/${this.self_id}`)
     }
     getMsg(message_id:string){
         return this.history.find(m=>m.message_id===message_id)

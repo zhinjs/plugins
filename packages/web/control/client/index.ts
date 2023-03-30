@@ -1,14 +1,14 @@
 import {ZhinWeb,store,send,message,router,defineExtension} from "@zhinjs/client";
 import { config } from './utils'
-
+import Profile from "./toolkit/profile.vue";
 export default defineExtension((web:ZhinWeb)=>{
+    send('config')
     // 在这儿添加路由
     if (config.token && config.expire > Date.now()) {
         send('login/token', Number(config.userId), config.token).catch(e => {
             message.error(typeof e==='string'?e:e.message)
         })
     }
-    send('config')
     web.disposables.push(
         router.beforeEach((route) => {
             if ((route.meta.authority || route.meta.fields.includes('user')) && !store.user) {
@@ -32,6 +32,7 @@ export default defineExtension((web:ZhinWeb)=>{
         path:'/config',
         name:'配置管理',
         icon:'tools',
+        authority:7,
         fields:['config'],
         position:'left',
         component:()=>import('./pages/config.vue')
@@ -39,6 +40,6 @@ export default defineExtension((web:ZhinWeb)=>{
     web.addToolkit({
         name: '用户资料',
         icon: 'user',
-        component: ()=>import('./toolkit/profile.vue'),
+        component:Profile,
     })
 })

@@ -12,10 +12,8 @@ declare module '@zhinjs/plugin-console'{
     }
 }
 function setData(handler:SocketHandle,options:Zhin.Options){
-    console.log(handler)
     if (!handler.user) throw new Error('请先登录。')
     if(handler.user.authority!==7) throw new Error('权限不足')
-    console.log(handler.ctx)
     handler.ctx?.zhin?.changeOptions(options)
     handler.send({ type: 'data', body: { key: 'config', value:handler.ctx.zhin.options } })
     handler.refresh()

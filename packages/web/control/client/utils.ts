@@ -3,7 +3,7 @@ import { createStorage, message, router, store } from '@zhinjs/client'
 import { UserAuth } from '@zhinjs/plugin-control'
 
 interface AuthConfig extends Partial<UserAuth> {
-    authType: 'captcha'|'password'
+    authType: 'captcha'|'token'|'password'
     platform?: string
     userId?: string
     showPass?: boolean
@@ -14,11 +14,13 @@ export const config = createStorage<AuthConfig>('auth', 1, () => ({
     authType: 'captcha',
 }))
 
-watch(() => store.user, (value) => {
+watch(() => store.user, (value,old) => {
     if (!value) {
         return router.push('/login')
     }
-    message.success(`欢迎回来，${value.name || 'zhin 用户'}！`)
+    if(old===undefined){
+        message.success(`欢迎回来，${value.name || 'zhin 用户'}！`)
+    }
     Object.assign(config, value)
     const from = router.currentRoute.value.redirectedFrom
     if (from && !from.path.startsWith('/login')) {

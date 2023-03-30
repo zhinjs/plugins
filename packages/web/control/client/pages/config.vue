@@ -26,6 +26,8 @@ export default {
         ElMessage.error(e)
       }
     }
+  },
+  mounted() {
   }
 }
 </script>

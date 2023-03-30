@@ -1,4 +1,5 @@
 import {h, NSession, Context, Zhin, Schema, useOptions} from "zhin";
+import * as fs from 'fs'
 import * as music from './music'
 
 export interface RecallConfig {
@@ -26,18 +27,20 @@ export function install(ctx: Context) {
     ctx.command('code <pluginName:string>')
         .desc('输出指定插件源码')
         .action((_, pluginName) => {
-            const plugins=ctx.zhin.getInstalledModules("plugin")
-            const plugin=plugins.find(p=>p.name===pluginName || p.fullName===pluginName)
-            if(!plugin) return '未找到插件'
-            return plugin.install.toString().replace(/(\\u.{4})+/g, (str) => eval(`'${str}'`))
+            const plugins = ctx.zhin.getInstalledModules("plugin")
+            const plugin = plugins.find(p => p.name === pluginName || p.fullName === pluginName)
+            if (!plugin) return '未找到插件'
+            return plugin.setup ?
+                fs.readFileSync(plugin.fullPath, 'utf8') :
+                plugin.install.toString().replace(/(\\u.{4})+/g, (str) => eval(`'${str}'`))
         })
     ctx.command('common')
         .desc('基础功能')
-    ctx.platform('icqq')
+    ctx
         .command('common/赞我')
-        .action(async ({session,bot})=>{
-            const result=await bot.internal.pickUser(Number(session.user_id)).asFriend().thumbUp(10)
-            if(result) return '给你赞好啦'
+        .action(async ({session, bot}) => {
+            const result = await bot.internal.pickUser(Number(session.user_id)).asFriend().thumbUp(10)
+            if (result) return '给你赞好啦'
             return '不能再赞了！！'
         })
     ctx.command('common/segment')

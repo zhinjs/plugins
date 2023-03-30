@@ -1,5 +1,5 @@
 {
-  "name": "@zhinjs/plugin-adapter-mock",
+  "name": "@zhinjs/adapter-mock",
   "main": "lib/index.js",
   "setup": true,
   "types": "lib/index.d.ts",

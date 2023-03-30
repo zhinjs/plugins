@@ -1,4 +1,4 @@
-import {Context, Schema, useOptions} from "zhin";
+import {Context, Schema, Time, useOptions} from "zhin";
 import {resolve} from 'path'
 import {AuthService} from './authService'
 export {UserAuth,UserLogin,UserUpdate} from'./authService'
@@ -6,8 +6,8 @@ import '@zhinjs/plugin-console'
 import {ConfigService} from "./configService";
 export const using=['console']
 export const Config=Schema.object({
-    authTokenExpire:Schema.number(),
-    loginTokenExpire:Schema.number()
+    authTokenExpire:Schema.number().description('鉴权token超时时间').default(Time.minute*10),
+    loginTokenExpire:Schema.number().default(Time.week)
 })
 export function install(ctx:Context){
     const config=Config(useOptions('services.consoleAuth'))

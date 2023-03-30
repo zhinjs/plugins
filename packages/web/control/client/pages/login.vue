@@ -2,7 +2,7 @@
   <el-card class="route-login">
     <template v-if="user && user.token">
       <h1><span>验证码登录</span></h1>
-      <p class="hint">欢迎你，{{ user.name || 'OITQ 用户' }}！</p>
+      <p class="hint">欢迎你，{{ user.name || 'Zhin 用户' }}！</p>
       <p class="hint">请用上述账号将下面的验证码私聊发送给任意机器人</p>
       <p class="token">{{ user.token }}</p>
       <div class="control">
@@ -85,7 +85,8 @@ async function loginWithCaptcha() {
 async function loginWithPassword() {
   const {userId, password} = config
   try {
-    await send('login/password', Number(userId), await sha256(password))
+    const result=await send('login/password', Number(userId), await sha256(password))
+    console.log('captcha',result)
   } catch (e) {
     ElMessage.error(e)
   }

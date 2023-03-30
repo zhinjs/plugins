@@ -3,10 +3,10 @@ export const name ='admin'
 export function install(ctx:Context){
     ctx.command('admin')
         .desc('管理知音')
-    const icqqCtx=ctx.platform('icqq')
-    icqqCtx.command('admin/group')
+    const groupAdmin=ctx.command('admin/group')
         .desc('群管插件')
-    icqqCtx.command('admin/group/quit')
+
+    groupAdmin.subcommand('quit')
         .desc('退出当前群聊')
         .auth("admins",'master')
         .action(async ({session})=>{
@@ -14,12 +14,12 @@ export function install(ctx:Context){
             await session.bot.internal.setGroupLeave(session.group_id as number)
             await session.bot.sendMsg(session.user_id as never,'private',`已退出群聊:${session.group_id}`)
         })
-    icqqCtx.command('admin/group/mute [...userIds:user_id]')
+    groupAdmin.subcommand('mute [...userIds:user_id]')
         .desc('禁言群成员')
         .option('all','-a 全体禁言')
         .option('cancel','-c 取消禁言')
         .option('time', '-t <time:number> 禁言时长（单位：秒；默认：600）')
-        .auth("admins","master")
+        .auth("admins","master",'admin')
         .action(async ({session, options}, ...user_ids) => {
             if(!options.time && !options.all) options.cancel=true
             if (!user_ids.length && !options.all) {
@@ -37,10 +37,10 @@ export function install(ctx:Context){
             return `已${options.cancel?'取消':''}禁言:${user_ids.join(',')}。${options.cancel?'':`\n禁言时长：${(options.time || 600) / 60}分钟`}`
         })
 
-    icqqCtx.command('admin/group/kick [...user_id:number]', 'group')
+    groupAdmin.subcommand('kick [...user_id:number]', 'group')
         .desc('踢出群成员')
         .option('block', '-b 是否拉入黑名单(默认false)')
-        .auth("admins","master")
+        .auth("admins","master","admin")
         .action(async ({session, options}, ...user_ids) => {
             if (!user_ids.length) {
                 const ids = await session.prompt.list('请输入你要踢出的成员qq',{child_type:'number'})
@@ -52,10 +52,10 @@ export function install(ctx:Context){
             }
             return `已踢出成员:${user_ids.join(',')}。`
         })
-    icqqCtx.command('admin/group/setAdmin [...user_id:number]','group')
+    groupAdmin.subcommand('setAdmin [...user_id:number]','group')
         .desc('设置/取消群管理员')
         .option('cancel','-c 是否为取消(为true时即取消管理员)')
-        .auth("master")
+        .auth("master",'owner')
         .action(async ({session,options}, ...user_ids)=>{
             if (!user_ids.length) {
                 const ids = await session.prompt.list(`请输入你要${!options.cancel?'设置':'取消'}管理员的成员qq`,{child_type:'number'})
@@ -67,9 +67,9 @@ export function install(ctx:Context){
             }
             return `已将${user_ids.join(',')}${!options.cancel?'设置为':'取消'}管理员。`
         })
-    icqqCtx.command('admin/group/setTitle [title:string] [user_id:number]','group')
+    groupAdmin.subcommand('setTitle [title:string] [user_id:number]','group')
         .desc('设置群成员头衔')
-        .auth("master")
+        .auth("master",'admins','admin')
         .action(async ({session},title,user_id)=>{
             if(!user_id){
                 const id = await session.prompt.number('请输入你要设置头衔的成员qq')
@@ -84,9 +84,9 @@ export function install(ctx:Context){
             await session.bot.internal.setGroupSpecialTitle(session.group_id as number,user_id,title)
             return '执行成功'
         })
-    icqqCtx.command('admin/group/setCard [card:string] [user_id:number]','group')
+    groupAdmin.subcommand('setCard [card:string] [user_id:number]','group')
         .desc('设置群成员名片')
-        .auth("admins","master")
+        .auth("admins","master","admin")
         .action(async ({session},card,user_id)=>{
             if(!user_id){
                 const id = await session.prompt.number('请输入你要设置名片的成员qq')
