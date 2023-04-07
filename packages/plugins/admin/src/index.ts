@@ -5,7 +5,15 @@ export function install(ctx:Context){
         .desc('管理知音')
     const groupAdmin=ctx.command('admin/group')
         .desc('群管插件')
-
+    const t=ctx.platform('icqq')
+    // t.command('admin/group/quit')
+    //     .desc('退出当前群聊')
+    //     .auth("admins",'master')
+    //     .action(async ({session})=>{
+    //         await session.reply('再见了，各位')
+    //         await session.bot.internal.setGroupLeave(session.group_id as number)
+    //         await session.bot.sendMsg(session.user_id as never,'private',`已退出群聊:${session.group_id}`)
+    //     })
     groupAdmin.subcommand('quit')
         .desc('退出当前群聊')
         .auth("admins",'master')
@@ -37,7 +45,7 @@ export function install(ctx:Context){
             return `已${options.cancel?'取消':''}禁言:${user_ids.join(',')}。${options.cancel?'':`\n禁言时长：${(options.time || 600) / 60}分钟`}`
         })
 
-    groupAdmin.subcommand('kick [...user_id:number]', 'group')
+    groupAdmin.subcommand('kick [...user_id:user_id]', 'group')
         .desc('踢出群成员')
         .option('block', '-b 是否拉入黑名单(默认false)')
         .auth("admins","master","admin")
@@ -48,11 +56,11 @@ export function install(ctx:Context){
             }
             if (!user_ids.length) return '踢出了0个成员'
             for (const user_id of user_ids) {
-                await session.bot.internal.setGroupKick(session.group_id as number,user_id, options.block)
+                await session.bot.internal.setGroupKick(session.group_id as number,user_id as number, options.block)
             }
             return `已踢出成员:${user_ids.join(',')}。`
         })
-    groupAdmin.subcommand('setAdmin [...user_id:number]','group')
+    groupAdmin.subcommand('setAdmin [...user_id:user_id]','group')
         .desc('设置/取消群管理员')
         .option('cancel','-c 是否为取消(为true时即取消管理员)')
         .auth("master",'owner')
@@ -63,11 +71,11 @@ export function install(ctx:Context){
             }
             if (!user_ids.length) return `${!options.cancel?'设置':'取消'}了0个管理员`
             for (const admin of user_ids) {
-                await session.bot.internal.setGroupAdmin(session.group_id as number,admin,!options.cancel)
+                await session.bot.internal.setGroupAdmin(session.group_id as number,admin as number,!options.cancel)
             }
             return `已将${user_ids.join(',')}${!options.cancel?'设置为':'取消'}管理员。`
         })
-    groupAdmin.subcommand('setTitle [title:string] [user_id:number]','group')
+    groupAdmin.subcommand('setTitle [title:string] [user_id:user_id]','group')
         .desc('设置群成员头衔')
         .auth("master",'admins','admin')
         .action(async ({session},title,user_id)=>{
@@ -81,10 +89,10 @@ export function install(ctx:Context){
                 if (nTitle) title=nTitle
             }
             if(!title) return '头衔不能为空'
-            await session.bot.internal.setGroupSpecialTitle(session.group_id as number,user_id,title)
+            await session.bot.internal.setGroupSpecialTitle(session.group_id as number,user_id as number,title)
             return '执行成功'
         })
-    groupAdmin.subcommand('setCard [card:string] [user_id:number]','group')
+    groupAdmin.subcommand('setCard [card:string] [user_id:user_id]','group')
         .desc('设置群成员名片')
         .auth("admins","master","admin")
         .action(async ({session},card,user_id)=>{
@@ -98,7 +106,7 @@ export function install(ctx:Context){
                 if (nCard) card=nCard
             }
             if(!card) return '名片不能为空'
-            await session.bot.internal.setGroupCard(session.group_id as number,user_id,card)
+            await session.bot.internal.setGroupCard(session.group_id as number,user_id as number,card)
             return '执行成功'
         })
 }

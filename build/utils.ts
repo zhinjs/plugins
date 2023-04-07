@@ -13,7 +13,7 @@ const categories = [
     'packages/plugins',
 ]
 const coreLib=[
-    'web/console',
+    'services/console',
     'services/database',
     'web/client'
 ].map(lib=>`packages/${lib}`)

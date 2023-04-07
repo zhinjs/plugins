@@ -96,6 +96,11 @@ export class ChatGPTService {
             },60000*30)
             return ;
         }catch (e){
+            const matchReasonReg=/reson:(.+)/
+            if(matchReasonReg.test(e.message+'')){
+                const reason=String(e.message).match(matchReasonReg)
+                return `哦豁，报错了：${reason[1]}`
+            }
             return `哦豁，报错了:${e.message}`
         }
     }

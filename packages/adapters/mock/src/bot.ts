@@ -23,10 +23,10 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
         this.self_id = Random.id(10)
         this.internal = zhin.service('router').ws(`/mock/${this.self_id}`)
     }
-    getMsg(message_id:string){
+    async getMsg(message_id:string){
         return this.history.find(m=>m.message_id===message_id)
     }
-    deleteMsg(message_id:string):boolean{
+    async (message_id:string):boolean{
         return true
     }
     isOnline() {
@@ -88,18 +88,6 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
             })
         })
     }
-
-    async callApi<K extends keyof Bot.Methods>(apiName: K, ...args: Parameters<Bot.Methods[K]>) {
-        switch (apiName){
-            case "getMsg":
-                return this.getMsg(`${args[0]}`) as ReturnType<Bot.Methods[K]>
-            case "deleteMsg":
-                return this.deleteMsg(`${args[0]}`) as ReturnType<Bot.Methods[K]>
-            case "sendMsg":
-                return await this.sendMsg(`${args[0]}`,args[1] as any,args[2]) as ReturnType<Bot.Methods[K]>
-        }
-    }
-
     createSession(event: string, payload: Record<string, any>): NSession<"mock"> {
         return {
             event,

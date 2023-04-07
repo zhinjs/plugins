@@ -17,7 +17,7 @@ export function install(ctx:Context){
         .action(async ({session},source)=>{
             if(!source){
                 if(session.quote) {
-                    const message=await session.bot.callApi('getMsg',session.quote.message_id)
+                    const message=await session.bot.getMsg(session.quote.message_id)
                     return Element('text',{text:message.elements.join('')})
                 }
                 source = await session.prompt.any()

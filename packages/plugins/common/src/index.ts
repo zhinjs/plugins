@@ -37,9 +37,11 @@ export function install(ctx: Context) {
     ctx.command('common')
         .desc('基础功能')
     ctx
-        .command('common/赞我')
-        .action(async ({session, bot}) => {
-            const result = await bot.internal.pickUser(Number(session.user_id)).asFriend().thumbUp(10)
+        .command('common/thumbMe')
+        .desc('为你点赞')
+        .option('times','-t <times:number> 赞多少次,默认10，每人人最多20次/天')
+        .action(async ({session,options, bot}) => {
+            const result = await bot.internal.pickUser(Number(session.user_id)).thumbUp(Math.min(options.times||10,20))
             if (result) return '给你赞好啦'
             return '不能再赞了！！'
         })
@@ -100,15 +102,15 @@ export function send(ctx: Context) {
         .action(async ({session, bot, options}, message) => {
             if (!message) return '请输入需要发送的消息'
             if (options.user) {
-                await bot.callApi('sendMsg', options.user, 'private', message)
+                await bot.sendMsg( options.user, 'private', message)
                 return true
             }
             if (options.group) {
-                await bot.callApi('sendMsg', options.group, 'group', message)
+                await bot.sendMsg(options.group, 'group', message)
                 return true
             }
             if (options.discuss) {
-                await bot.callApi('sendMsg', options.discuss, 'discuss', message)
+                await bot.sendMsg( options.discuss, 'discuss', message)
                 return true
             }
             return message
@@ -117,15 +119,9 @@ export function send(ctx: Context) {
 
 export function recall(ctx: Context) {
     const {recall = 10} = Config(useOptions('plugins.common'))
-    const recent: Record<number, string[]> = {}
-    ctx.on('send', ({message_id, group_id, user_id, guild_id, channel_id}) => {
-        let target_id: number
-        if (message_id.length > 24) {
-            target_id = group_id
-        } else {
-            target_id = user_id
-        }
-        const list = recent[target_id] ||= []
+    const recent: Record<string, string[]> = {}
+    ctx.on('message.send', ({message_id, to_id}) => {
+        const list = recent[to_id] ||= []
         list.unshift(message_id)
         if (list.length > recall) {
             list.pop()
@@ -141,7 +137,7 @@ export function recall(ctx: Context) {
             if (!list.length) delete recent[target_id]
             for (let index = 0; index < removal.length; index++) {
                 try {
-                    await bot.callApi('deleteMsg', removal[index])
+                    await bot.deleteMsg(removal[index])
                 } catch (error) {
                     ctx.logger.warn(error)
                 }
@@ -178,7 +174,7 @@ export function feedback(ctx: Context) {
             const message = `收到来自${fromCN[session.detail_type]()}的消息：\n${text}`
             for (let index = 0; index < operators.length; ++index) {
                 const user_id = operators[index]
-                const {message_id} = await bot.callApi('sendMsg', user_id, 'private', message)
+                const {message_id} = await bot.sendMsg( user_id, 'private', message)
                 createReplyCallback(ctx, session, message_id, user_id)
             }
             return '反馈成功'

@@ -1,16 +1,16 @@
 {
-  "name": "@zhinjs/adapter-mock",
+  "name": "@zhinjs/adapter-onebot",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.10",
+  "version": "0.0.2",
   "description": "mock adapter",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "packages/adapters/mock"
+    "directory": "packages/adapters/onebot"
   },
   "keywords": [
-    "mock",
+    "onebot",
     "adapter",
     "plugin",
     "zhin"
