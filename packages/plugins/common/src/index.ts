@@ -36,7 +36,7 @@ export function install(ctx: Context) {
         })
     ctx.command('common')
         .desc('基础功能')
-    ctx
+    ctx.platform('icqq')
         .command('common/thumbMe')
         .desc('为你点赞')
         .option('times','-t <times:number> 赞多少次,默认10，每人人最多20次/天')

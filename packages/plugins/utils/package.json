@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-utils",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.18",
+  "version": "0.0.21",
   "description": "utils plugin",
   "repository": {
     "type": "git",

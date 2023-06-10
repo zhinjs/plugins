@@ -22,6 +22,11 @@ export const QA={
             const belongs=data.map(item=>`${item.type}:${item.target}`).join(',')
             this.setDataValue('belongs',belongs)
         }
+    },
+    creator:DataTypes.TEXT,
+    useTimes:{
+        type:DataTypes.INTEGER,
+        defaultValue: 0
     }
 
 }

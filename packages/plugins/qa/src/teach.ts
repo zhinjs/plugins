@@ -158,6 +158,7 @@ export function install(ctx: Context) {
                     isReg: !!options.regexp
                 }
                 if (a) {
+                    console.log('answer',a)
                     data.answer = a.join('')
                 }
                 if (options.probability) {

@@ -123,22 +123,15 @@ export function createWsHandler(bot: OneBot, options: OneBot.Options<'ws'>) {
     socket.on('message', (data) => {
         const event = JSON.parse(data.toString())
         if (event) {
-            if (!['heartbeat', 'status_update', 'connect'].includes(event.detail_type)) {
-                bot.logger.debug('receive:', JSON.stringify(event))
-                if (event.type === 'message') {
-                    bot.logger.info(`receive:${JSON.stringify(event.message)}`)
-                }
-            }
             if (event.echo) {
                 bot.adapter.dispatch('echo', event)
-            } else {
+            }else if (event.type!=='meta' && event.detail_type!=='heartbeat'){
                 bot.adapter.dispatch(event.type, bot.createSession(event.type, event))
             }
         }
     })
     bot.sendPayload = function (payload) {
         const data = JSON.stringify(payload)
-        bot.logger.info('send:', data)
         socket.send(data)
     }
     return () => {
@@ -168,16 +161,9 @@ export function createWsReverseHandler(bot: OneBot, options: OneBot.Options<'ws_
         bot.logger.info(`已连接到协议端：(${getReqIp(req)})`)
         ws.on('message', (data) => {
             const event = JSON.parse(data.toString())
-            if (!['heartbeat', 'status_update', 'connect'].includes(event.detail_type)) {
-                bot.logger.debug('receive:', JSON.stringify(event))
-                bot.self_id = event.self_id
-                if (event.type === 'message') {
-                    bot.logger.info(`receive:${JSON.stringify(event.message)}`)
-                }
-            }
             if (event.echo) {
                 bot.adapter.dispatch('echo', event)
-            } else {
+            }else if (event.type!=='meta' && event.detail_type!=='heartbeat'){
                 bot.adapter.dispatch(event.type, bot.createSession(event.type, event))
             }
         })
@@ -194,7 +180,6 @@ export function createWsReverseHandler(bot: OneBot, options: OneBot.Options<'ws_
     })
     bot.sendPayload = function (payload) {
         const data = JSON.stringify(payload)
-        bot.logger.info('send:', data)
         for (const ws of wss) {
             ws.send(data)
         }

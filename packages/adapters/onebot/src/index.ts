@@ -2,7 +2,7 @@ import {Adapter, AdapterOptions, Zhin} from "zhin";
 import {OneBot} from "./bot";
 export {OneBot}
 export {OneBotEventMap} from './types'
-export class OneBotAdapter<T extends keyof OneBotAdapter.AdapterOptions=keyof OneBotAdapter.AdapterOptions> extends Adapter<`oneBot`,OneBot.Options<T>,OneBotAdapter.Options>{
+export class OneBotAdapter<T extends keyof OneBotAdapter.AdapterOptions=keyof OneBotAdapter.AdapterOptions> extends Adapter<`onebot`,OneBot.Options<T>,OneBotAdapter.Options>{
     constructor(app:Zhin, protocol, options:AdapterOptions<OneBot.Options<T>,OneBotAdapter.Options>) {
         super(app,protocol,options);
     }
@@ -45,4 +45,4 @@ export namespace OneBotAdapter{
         access_token?:string
     }
 }
-Adapter.define('oneBot',OneBotAdapter,OneBot)
+Adapter.define('onebot',OneBotAdapter,OneBot)

@@ -1,4 +1,4 @@
-import {Context, Session, template} from "zhin";
+import {Context, Session, template,Element} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
 import {Model} from "sequelize";
@@ -88,12 +88,7 @@ export function install(ctx: Context) {
             await session.reply(`正在执行任务${id}...`)
             for (const step of task.steps) {
                 try {
-                    const result = await session.execute({
-                        session,
-                        elements:[],
-                        name: 'exec',
-                        args: [step.template]
-                    })
+                    const result = await session.execute(Element.parse(step.template,session))
                     if (result && typeof result !== 'boolean') await session.reply(result)
                 } catch (e) {
                     return e.message

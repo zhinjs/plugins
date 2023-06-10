@@ -117,7 +117,7 @@ export namespace Types {
 
     export interface ActionMap {
         send_message(params: CanSendMessage): MessageRet
-
+        get_msg(params:{message_id:string}):MessageBase
         delete_message(params: Pick<MessageRet, 'message_id'>): void
 
         get_friend_list(): UserInfo[]

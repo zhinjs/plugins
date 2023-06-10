@@ -18,6 +18,7 @@ export function install(ctx:Context){
             if(!source){
                 if(session.quote) {
                     const message=await session.bot.getMsg(session.quote.message_id)
+                    if(!message.elements) return '取不了'
                     return Element('text',{text:message.elements.join('')})
                 }
                 source = await session.prompt.any()

@@ -1,16 +1,20 @@
 {
-  "name": "@zhinjs/plugin-task",
+  "name": "@zhinjs/plugin-listener",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.11",
-  "description": "task plugin",
+  "version": "0.0.1",
+  "description": "listener plugin",
+  "setup": true,
+  "using": [
+    "database"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/task"
+    "directory": "plugins/listener"
   },
   "keywords": [
-    "task",
+    "listener",
     "plugin",
     "zhin"
   ],
