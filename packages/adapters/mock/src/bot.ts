@@ -44,7 +44,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
             from_id:this.self_id,
             to_id:target_id,
             type:target_type,
-            elements:Element.toElementArray(message)
+            content:Element.stringify(message)
         } as Bot.Message)
     }
 
@@ -63,7 +63,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
                             user_id:member.info.user_id,
                             to_id:this.self_id,
                             type:payload.type,
-                            elements:Element.parse(payload.message)
+                            content:payload.message
                         })
                         break;
                     case "group":
@@ -73,7 +73,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
                             user_id:member.info.user_id,
                             to_id:this.self_id,
                             type:payload.type,
-                            elements:Element.parse(payload.message)
+                            content:payload.message
                         })
                         break;
                     default:

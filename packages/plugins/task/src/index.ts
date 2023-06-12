@@ -33,11 +33,11 @@ export function install(ctx: Context) {
     ctx.service('tasks', taskService)
     ctx.command('task [id:integer]')
         .desc('任务管理')
-        .option('list', '-l 查看已有任务', {initial: true})
-        .option('pageNum', '/ <pageNum:integer> 查看指定页', {initial: 1})
-        .option('search', '-s <keyword:string> 搜索指定名称的任务')
-        .option('remove', '-r 移除指定任务')
-        .shortcut(/^删除任务(\d+)$/, {options: {remove: true}, args: ['$1']})
+        .option('-l [list:boolean] 查看已有任务', true)
+        .option('-p [pageNum:integer] 查看指定页', 1)
+        .option('-s [search:string] 搜索指定名称的任务')
+        .option('-r [remove:boolean] 移除指定任务')
+        .sugar(/^删除任务(\d+)$/, {options: {remove: true}, args: ['$1']})
         .action(async ({options, session}, id) => {
             if (options.remove) {
                 if (!id) return '未指定任务id'
@@ -52,25 +52,23 @@ export function install(ctx: Context) {
         })
     ctx.command('task/task.add')
         .desc('新增任务')
-        .shortcut('新增任务')
-        .action(async ({session}, name) => {
+        .alias('新增任务')
+        .action<Session>(async ({session}, name) => {
             const result = await taskService.modifyTask(session)
             if (typeof result === 'string') return result
             return `添加任务(${result.id})成功`
         })
-    ctx.command('task/task.edit [id:integer]')
+    ctx.admins().command('task/task.edit [id:integer]')
         .desc('编辑任务')
-        .shortcut('编辑任务')
-        .auth("admins")
-        .action(async ({session}, id) => {
+        .alias('编辑任务')
+        .action<Session>(async ({session}, id) => {
             const result = await taskService.modifyTask(session, id)
             if (typeof result === 'string') return result
             return `编辑任务(${result.id})成功`
         })
-    ctx.command('task/task.info [id:integer]')
+    ctx.admins().command('task/task.info [id:integer]')
         .desc('查看任务详情')
-        .shortcut(/^查看任务(\d+)/, {args: ['$1']})
-        .auth('admins')
+        .sugar(/^查看任务(\d+)/, {args: ['$1']})
         .action(async ({session}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
@@ -78,17 +76,16 @@ export function install(ctx: Context) {
                 return template('task.step', step.index, step.template)
             }).join('\n'))
         })
-    ctx.command('task/task.run [id:integer]')
+    ctx.admins().command('task/task.run [id:integer]')
         .desc('执行指定任务')
-        .shortcut(/^执行任务(\d+)/, {args: ['$1']})
-        .auth("admins")
-        .action(async ({session}, id) => {
+        .sugar(/^执行任务(\d+)/, {args: ['$1']})
+        .action<Session>(async ({session}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
             await session.reply(`正在执行任务${id}...`)
             for (const step of task.steps) {
                 try {
-                    const result = await session.execute(Element.parse(step.template,session))
+                    const result = await session.execute(step.template)
                     if (result && typeof result !== 'boolean') await session.reply(result)
                 } catch (e) {
                     return e.message

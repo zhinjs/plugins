@@ -1,4 +1,4 @@
-import {Context, h, template} from "zhin";
+import {Context, h, Session, template} from "zhin";
 import {Op} from "sequelize";
 import {QA} from "./models";
 
@@ -52,27 +52,22 @@ template.set('teach', {
 })
 export const using=['database']
 export function install(ctx: Context) {
-    ctx.command('qa [question:string] [answer]')
+    ctx.command('qa [question:string] [answer:string]')
         .desc('问答管理')
-        .option('list', '-l 查看问答列表')
-        .option('info', '-i <id:string> 查看指定教学详情')
-        .option('search', '-s <keyword:string> 搜索关键词')
-        .option('delete', '-d <id:string> 删除指定id的教学')
-        .option('regexp', '-x 是否为正则匹配')
-        .option('redirect', '-> <question:string> 重定向到指定问题')
-        .option('probability', '-p <probability:number> 触发概率')
-        .option('trigger', '-t [trigger:string] 触发环境')
-        .option('page', '/ <page:integer> 页码')
-        .shortcut(/^## (\S+)$/, {options: {search: '$1'},fuzzy:true})
-        .option('edit', '-e 是否为编辑')
-        .shortcut(/^删除问答(\d+)$/, {options: {id: '$1',remove:true}})
-        .shortcut(/^查看问答(\d+)$/, {options: {id: '$1',detail:true}})
-        .example('`# -l` 查看第一页')
-        .example('`# -l / 2` 查看第二页问答')
-        .example('`# -s test` 搜索关键词为`test`的问答')
-        .example('`# test hello -p 0.5` 当输入`test`时，回复`hello`，并设置该会带的概率权重为0.5')
-        .example('`# test world` 将test的回答改为`world`')
-        .action(async ({session, options}, q, a) => {
+        .option('-l [list:boolean] 查看问答列表')
+        .option('-i [info:integer] 查看指定教学详情')
+        .option('-s [search:string] 搜索关键词')
+        .option('-d [delete:integer] 删除指定id的教学')
+        .option('-x [regexp:regexp] 是否为正则匹配')
+        .option( '-> [redirect:string] 重定向到指定问题')
+        .option( '-p [probability:number] 触发概率')
+        .option('-t [trigger:string] 触发环境')
+        .option('-P [page:number] 页码')
+        .sugar(/^## (\S+)$/, {options: {search: '$1'}})
+        .option('-e [edit:boolean] 是否为编辑')
+        .sugar(/^删除问答(\d+)$/, {options: {delete: '$1'}})
+        .sugar(/^查看问答(\d+)$/, {options: {info: '$1'}})
+        .action<Session>(async ({session, options}, q, a) => {
             if (Object.keys(options).filter(key => ['list', 'detail', 'search', 'edit', 'remove'].includes(key)).length > 1) {
                 return '查询/列表/详情、编辑/删除只能同时调用一个'
             }
@@ -159,7 +154,7 @@ export function install(ctx: Context) {
                 }
                 if (a) {
                     console.log('answer',a)
-                    data.answer = a.join('')
+                    data.answer = a
                 }
                 if (options.probability) {
                     data.probability = options.probability

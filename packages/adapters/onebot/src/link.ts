@@ -21,7 +21,6 @@ export function createHttpHandler(bot: OneBot, options: OneBot.Options<'http'>) 
             request.post(payload.action, payload.params).then(res => {
                 if (res.status === 200) {
                     bot.logger.debug(`发送动作（${payload.action}）成功`)
-                    request.post(payload.action, payload.params)
                     resolve(res.data)
                 } else if (res.status === 401) {
                     bot.logger.error(`鉴权失败`)

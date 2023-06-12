@@ -1,23 +1,6 @@
 import {Context, NSession} from "zhin";
 
 export const name = 'admin'
-function lcs(...strArr){
-    strArr=strArr.sort((a,b)=>a.length-b.length)
-    if(!strArr.length) return ''
-    if(strArr.length===1) return strArr[0]
-    const first=strArr.shift()
-    if(!first.length) return first
-    let resArr=[]
-    let subStr;
-    for(let i=0;i<first.length;i++){
-        let l=1;
-        while (i+l<first.length && strArr.every(str=>str.includes(subStr=first.substring(i,i+l)))){
-            resArr.push(subStr)
-            l++
-        }
-    }
-    return resArr.sort((a,b)=>b.length-a.length)[0]||''
-}
 export function install(ctx: Context) {
     ctx.command('admin')
         .desc('管理知音')
@@ -40,7 +23,7 @@ export function install(ctx: Context) {
     }
 
     ctx.on('icqq.request.group.invite', async (e) => {
-        if (e.bot.isAdmin(e) || e.bot.isMaster(e)) e.approve(true)
+        if (e.bot.isAdmins(e) || e.bot.isMaster(e)) e.approve(true)
         else {
             const messageRets = await ctx.zhin.broadcast([e.bot.options.master, ...e.bot.options.admins].map(user_id => {
                 return `${e.protocol}:${e.bot.self_id}:private:${user_id}` as any
@@ -49,13 +32,13 @@ export function install(ctx: Context) {
             await handleApprove(
                 e,
                 (s) => s.quote && messageIds.includes(s.quote.message_id),
-                (s) => s.elements.join('') === '同意'
+                (s) => s.content === '同意'
             )
         }
     })
 
     ctx.on('icqq.request.group.add', async (e) => {
-        if (e.bot.isAdmin(e) || e.bot.isMaster(e)) e.approve(true)
+        if (e.bot.isAdmins(e) || e.bot.isMaster(e)) e.approve(true)
         else {
             const messageRets = await ctx.zhin.broadcast([e.bot.options.master, ...e.bot.options.admins].map(user_id => {
                 return `${e.protocol}:${e.bot.self_id}:private:${user_id}` as any
@@ -64,12 +47,12 @@ export function install(ctx: Context) {
             await handleApprove(
                 e,
                 (s) => s.quote && messageIds.includes(s.quote.message_id),
-                (s) => s.elements.join('') === '同意'
+                (s) => s.content === '同意'
             )
         }
     })
     ctx.on('icqq.request.friend.add', async (e) => {
-        if (e.bot.isAdmin(e) || e.bot.isMaster(e)) e.approve(true)
+        if (e.bot.isAdmins(e) || e.bot.isMaster(e)) e.approve(true)
         else {
             const messageRets = await ctx.zhin.broadcast([e.bot.options.master, ...e.bot.options.admins].map(user_id => {
                 return `${e.protocol}:${e.bot.self_id}:private:${user_id}` as any
@@ -78,28 +61,27 @@ export function install(ctx: Context) {
             await handleApprove(
                 e,
                 (s) => s.quote && messageIds.includes(s.quote.message_id),
-                (s) => s.elements.join('') === '同意'
+                (s) => s.content === '同意'
             )
         }
     })
     ctx.on('icqq.notice.group.increase',e=>{
 
     })
-    ctx.command('admin/group/quit')
+    ctx.role('admins',"master").command('admin/group/quit')
         .desc('退出当前群聊')
-        .auth("admins", 'master')
-        .action(async ({session}) => {
+        .action<NSession<'icqq','message.group'>>(async ({session}) => {
             await session.reply('再见了，各位')
             await session.bot.internal.setGroupLeave(session.group_id as number)
             await session.bot.sendMsg(session.user_id as never, 'private', `已退出群聊:${session.group_id}`)
         })
-    ctx.command('admin/group/mute [...userIds:user_id]')
+    ctx.role('admins',"master","admin")
+        .command('admin/group/mute [...userIds:user_id]')
         .desc('禁言群成员')
-        .option('all', '-a 全体禁言')
-        .option('cancel', '-c 取消禁言')
-        .option('time', '-t <time:number> 禁言时长（单位：秒；默认：600）')
-        .auth("admins", "master", 'admin')
-        .action(async ({session, options}, ...user_ids) => {
+        .option('-a [all:boolean] 全体禁言')
+        .option( '-c [cancel:boolean] 取消禁言')
+        .option('-t [time:number] 禁言时长（单位：秒；默认：600）')
+        .action<NSession<'icqq','message.group'>>(async ({session, options}, user_ids) => {
             if (!options.time && !options.all) options.cancel = true
             if (!user_ids.length && !options.all) {
                 const ids = await session.prompt.list(`请输入你要${options.cancel ? '取消' : ''}禁言的成员qq`, {child_type: 'number'})
@@ -116,11 +98,10 @@ export function install(ctx: Context) {
             return `已${options.cancel ? '取消' : ''}禁言:${user_ids.join(',')}。${options.cancel ? '' : `\n禁言时长：${(options.time || 600) / 60}分钟`}`
         })
 
-    ctx.command('admin/group/kick [...user_id:user_id]', 'group')
+    ctx.role('admins','master','admin').command('admin/group/kick [...user_id:user_id]')
         .desc('踢出群成员')
-        .option('block', '-b 是否拉入黑名单(默认false)')
-        .auth("admins", "master", "admin")
-        .action(async ({session, options}, ...user_ids) => {
+        .option( '-b [block:boolean] 是否拉入黑名单(默认false)')
+        .action<NSession<'icqq','message.group'>>(async ({session, options}, user_ids) => {
             if (!user_ids.length) {
                 const ids = await session.prompt.list('请输入你要踢出的成员qq', {child_type: 'number'})
                 if (ids) user_ids.push(...ids)
@@ -131,11 +112,10 @@ export function install(ctx: Context) {
             }
             return `已踢出成员:${user_ids.join(',')}。`
         })
-    ctx.command('admin/group/setAdmin [...user_id:user_id]', 'group')
+    ctx.role("master", 'owner').command('admin/group/setAdmin [...user_id:user_id]')
         .desc('设置/取消群管理员')
-        .option('cancel', '-c 是否为取消(为true时即取消管理员)')
-        .auth("master", 'owner')
-        .action(async ({session, options}, ...user_ids) => {
+        .option( '-c [cancel:boolean] 是否为取消(为true时即取消管理员)')
+        .action<NSession<'icqq','message.group'>>(async ({session, options}, user_ids) => {
             if (!user_ids.length) {
                 const ids = await session.prompt.list(`请输入你要${!options.cancel ? '设置' : '取消'}管理员的成员qq`, {child_type: 'number'})
                 if (ids) user_ids.push(...ids)
@@ -146,10 +126,9 @@ export function install(ctx: Context) {
             }
             return `已将${user_ids.join(',')}${!options.cancel ? '设置为' : '取消'}管理员。`
         })
-    ctx.command('admin/group/setTitle [title:string] [user_id:user_id]', 'group')
+    ctx.role("master", 'admins', 'admin').command('admin/group/setTitle [title:string] [user_id:user_id]')
         .desc('设置群成员头衔')
-        .auth("master", 'admins', 'admin')
-        .action(async ({session}, title, user_id) => {
+        .action<NSession<'icqq','message.group'>>(async ({session}, title, user_id) => {
             if (!user_id) {
                 const id = await session.prompt.number('请输入你要设置头衔的成员qq')
                 if (id) user_id = id
@@ -163,10 +142,10 @@ export function install(ctx: Context) {
             await session.bot.internal.setGroupSpecialTitle(session.group_id as number, user_id as number, title)
             return '执行成功'
         })
-    ctx.command('admin/group/setCard [card:string] [user_id:user_id]', 'group')
+    ctx.role("admins", "master", "admin")
+        .command('admin/group/setCard [card:string] [user_id:user_id]')
         .desc('设置群成员名片')
-        .auth("admins", "master", "admin")
-        .action(async ({session}, card, user_id) => {
+        .action<NSession<'icqq','message.group'>>(async ({session}, card, user_id) => {
             if (!user_id) {
                 const id = await session.prompt.number('请输入你要设置名片的成员qq')
                 if (id) user_id = id

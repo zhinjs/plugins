@@ -26,13 +26,13 @@ export function install(ctx: Context, config: Config={}) {
 
         async function executeCron() {
             ctx.logger.debug('execute %d: %s', id, command)
-            let result=await session.execute({
-                session:session as any,
-                name:'exec',
-                elements:[],
-                args:[command]
-            })
-            if(result && typeof result!=='boolean')await ctx.zhin.sendMsg(Zhin.getChannelId(session),result)
+            let result=await session.execute(`exec ${command}`)
+            if(result && typeof result!=='boolean')await ctx.zhin.sendMsg({
+                protocol:session.protocol,
+                bot_id:session.bot.self_id,
+                target_id:session.group_id ||  session.discuss_id || session.user_id,
+                target_type:session.detail_type as any,
+            },result)
             if (!lastCall || !interval) return
             lastCall = new Date()
             await ctx.database.set('cron',{id},{ lastCall })
@@ -78,15 +78,15 @@ export function install(ctx: Context, config: Config={}) {
         })
     })
 
-    ctx.command('cron [time]')
+    ctx.command('cron [time:string]')
         .desc('定时任务')
-        .option('rest', '-- <command:text>  要执行的指令')
-        .option('interval', '/ <interval:string>  设置触发的间隔秒数')
-        .option('list', '-l  查看已经设置的日程')
-        .option('ensure', '-e  错过时间也确保执行')
-        .option('full', '-f  查找全部上下文')
-        .option('delete', '-d <id>  删除已经设置的日程')
-        .action(async ({ session, options }, ...dateSegments) => {
+        .option('-r [rest:text]  要执行的指令')
+        .option( '-i [interval:string]  设置触发的间隔秒数')
+        .option('-l [list:boolean]  查看已经设置的日程')
+        .option('-e [ensure:boolean]  错过时间也确保执行')
+        .option( '-f [full:boolean] 查找全部上下文')
+        .option( '-d [delete:boolean]  删除已经设置的日程')
+        .action<NSession < keyof Zhin.Adapters>>(async ({ session, options }, ...dateSegments) => {
             if (options.delete) {
                 await ctx.database.delete('cron',{id:options.delete})
                 return `日程 ${options.delete} 已删除。`

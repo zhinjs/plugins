@@ -116,7 +116,7 @@ export class AuthService extends DataService<UserAuth> {
 
         ctx.middleware(async (session,next) => {
             const state = states[session.user_id]
-            if (state && state[0] === session.elements.join('')) {
+            if (state && state[0] === session.content) {
                 const user=session.friend||session.member||session.user
                 if (!user.expire || user.expire < Date.now()) {
                     user.token = v4()

@@ -1,4 +1,4 @@
-import {TriggerSessionMap, Context, ChannelId, useOptions, Schema} from 'zhin'
+import {Context, ChannelId, useOptions, Schema, NSession, Zhin} from 'zhin'
 import RssFeedEmitter from 'rss-feed-emitter'
 import {Meta} from 'feedparser'
 import {Feed} from "./models";
@@ -74,7 +74,7 @@ export function install(ctx: Context) {
     })
     const validators: Record<string, Promise<unknown>> = {}
 
-    async function validate(url: string, session: TriggerSessionMap[keyof TriggerSessionMap]) {
+    async function validate(url: string, session: NSession<keyof Zhin.Adapters>) {
         if (validators[url]) {
             await session.reply('正在尝试连接……')
             return validators[url]
@@ -104,10 +104,10 @@ export function install(ctx: Context) {
     })
     ctx.command('rss <title:string> <url:string>')
         .desc('订阅 RSS 链接')
-        .option('list', '-l 查看订阅列表')
-        .option('template', '-t <text> 定义输出模板')
-        .option('remove', '-r 取消订阅')
-        .action(async ({session, bot, options}, title, url) => {
+        .option('-l [list:boolean] 查看订阅列表')
+        .option('-t [template:string] 定义输出模板')
+        .option('-r [remove:boolean] 取消订阅')
+        .action<NSession < keyof Zhin.Adapters>>(async ({session, options}, title, url) => {
             let target_id
             if ("group_id" in session) {
                 target_id = session.group_id
@@ -132,7 +132,7 @@ export function install(ctx: Context) {
 
             if (options.remove) {
                 if (index < 0) return '未订阅此链接。'
-                if (session.user_id !== rssList[index].creator_id && bot.isMaster(session)) return '权限不足'
+                if (session.user_id !== rssList[index].creator_id && session.isMaster) return '权限不足'
                 await ctx.database.models.Rss.destroy({
                     where: {
                         url,

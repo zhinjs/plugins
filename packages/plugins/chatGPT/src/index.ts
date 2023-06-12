@@ -1,10 +1,10 @@
-import {Element, useContext, useOptions} from "zhin";
+import {Element, Session, useContext, useOptions} from "zhin";
 import {ChatGPTService} from "./service";
 const ctx=useContext()
 const apiKey=ChatGPTService.Config(useOptions('plugins.chatgpt'))
 ctx.service('chatgpt',ChatGPTService,apiKey)
 ctx.command('咨询 <question:any>')
-.action(async ({session:{user_id}},message)=>{
+.action<Session>(async ({session:{user_id}},message)=>{
     const result=await ctx.chatgpt.getAnswerWithQuestion(user_id,message)
     const dispose=ctx.middleware(async (session, next)=>{
         await next()
@@ -12,7 +12,7 @@ ctx.command('咨询 <question:any>')
         dispose()
         const preMsg=Element.stringify(session.quote.element)
         if(preMsg===result){
-            await session.reply(await ctx.chatgpt.getAnswerWithQuestion(session.user_id,session.elements))
+            await session.reply(await ctx.chatgpt.getAnswerWithQuestion(session.user_id,session.content))
         }
     })
     ctx.setTimeout(()=>{

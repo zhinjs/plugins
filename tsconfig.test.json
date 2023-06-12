@@ -8,7 +8,7 @@
         "packages/services/*/src",
         "packages/web/*/src"
       ],
-      "@zhinjs/plugin-adapter-*": [
+      "@zhinjs/adapter-*": [
         "packages/adapters/*/src"
       ],
       "@zhinjs/plugin-game-*": [

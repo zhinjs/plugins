@@ -1,4 +1,4 @@
-import {Context, Dict, Session, h, Schema,Request} from "zhin";
+import {Context, Dict, Session, Element, Schema,Request} from "zhin";
 import {DataTypes} from "sequelize";
 import { Method } from 'axios'
 import {GithubTable} from "./models/github";
@@ -98,7 +98,7 @@ export class GitHub{
     async authorize(session: Session, message: string) {
         const name = await session.prompt.text(message)
         if (name) {
-            await session.execute({ name: 'github.authorize',session:session as any,elements:[], args: [name] })
+            await session.execute(`github authorize ${name}`)
         } else {
             await session.reply('输入超时')
         }
@@ -173,7 +173,7 @@ export class ReplyHandler {
     }
 
     async transform(source: string) {
-        const [{type,attrs:{url,text}}]=h.parse(source)
+        const [{type,attrs:{url,text}}]=Element.parse(source)
         return type!=='image'?text:`![${text}](${url})`
     }
 

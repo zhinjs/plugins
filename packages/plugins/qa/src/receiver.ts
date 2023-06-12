@@ -10,7 +10,7 @@ function hasEnv(envs, type, target) {
 
 export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bots>) {
     const teaches = await ctx.database.models.QA.findAll()
-    const question=session.elements.join('')
+    const question=session.content
     const dialogues = teaches.map(teach => teach.toJSON())
         .filter((teach) => hasEnv(teach.belongs, session.detail_type, session.group_id || session.discuss_id || session.user_id))
         .filter(teach => {
@@ -46,7 +46,7 @@ export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bot
                 dialogue.redirect = dialogue.redirect.replace(reg, args[index])
             }
         }
-        session.elements = Element.parse(dialogue.redirect,session)
+        session.content = Element.stringify(dialogue.redirect)
         return triggerTeach(ctx, session)
     }
     if (dialogue.isReg) {

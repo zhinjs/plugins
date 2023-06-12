@@ -3,7 +3,7 @@ import {OneBotAdapter, OneBotEventMap} from "./";
 import {OneBotPayload, Types} from './types'
 import {createHttpHandler, createWebhookHandler, createWsHandler, createWsReverseHandler} from "./link";
 import {Logger} from "log4js";
-import {fromFragment, toElement} from "./utils";
+import {fromFragment, toElement,toString} from "./utils";
 
 declare module 'zhin' {
     namespace Zhin {
@@ -86,14 +86,26 @@ export class OneBot extends Bot<
             type: obj.post_type || event,
             detail_type: obj.message_type || obj.request_type || obj.system_type || obj.notice_type || 'guild',
         }, {args})
+        if(obj.source){
+            obj.quote={
+                message_id:obj.source.message_id,
+                user_id:obj.source.user_id,
+                content:obj.source.message
+            }
+            obj.message.shift()
+            obj.content=toString(obj.message||'')
+            delete obj.source
+        }else{
+            obj.content=toString(obj.message||'')
+        }
         const session = new Session<"onebot">(this.adapter, this.self_id, event, obj)
-        session.elements = toElement(obj.message)
         return session as any
     }
 
     private async runAction<T extends keyof Types.ActionMap>(action: T, params?: Parameters<Types.ActionMap[T]>[0], async?: boolean): Promise<ReturnType<Types.ActionMap[T]>> {
         return new Promise((resolve, reject) => {
             const echo = new Date().getTime()
+            this.zhin.logger.debug(`[onebot:${this.self_id}] run action ${action} with echo ${echo}`, params)
             this.sendPayload({
                 action: `${action}${async ? '_async' : ''}`,
                 echo,
@@ -122,9 +134,9 @@ export class OneBot extends Bot<
             message_id,
             from_id: this.self_id,
             to_id: result['user_id']||result['group_id']||result['discuss_id']||result['channel_id'],
-            elements: toElement(result.message),
             type: result['detail_type'],
-            user_id: this.self_id
+            user_id: this.self_id,
+            content: toString(result.message),
         }
     }
     getFriendList() {
@@ -158,17 +170,18 @@ export class OneBot extends Bot<
     async sendMsg(target_id: string | number, target_type: Bot.MessageType, message: Element.Fragment): Promise<Bot.MessageRet> {
         const types = ['private', 'group', 'discuss']
         if (!Array.isArray(message)) message = [message]
+        const sendMessage=fromFragment(message)
         const result = await this.runAction('send_message', {
             guild_id: types.includes(target_type) ? undefined : String(target_id),
             channel_id: types.includes(target_type) ? undefined : target_type,
             [target_type === 'private' ? 'user_id' : `${target_type}_id`]: types.includes(target_type) ? target_id : undefined,
-            message: fromFragment(message)
+            message:sendMessage
         })
         const messageRet={
             message_id: result.message_id,
             from_id: this.self_id,
             to_id: target_id,
-            elements: Element.toElementArray(message),
+            content: toString(sendMessage),
             type: target_type,
             user_id: this.self_id
         }

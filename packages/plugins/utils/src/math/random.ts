@@ -7,7 +7,7 @@ export function install(ctx:Context){
         .action(()=>{
             return Math.random().toString()
         })
-    p.subcommand('random.int <min:integer> [max:integer]')
+    p.command('random.int <min:integer> [max:integer]')
         .desc('在指定范围生成随机数,未传max时，min为0，max为min')
         .action((_,min,max)=>{
             if(!max&&min!==undefined){
@@ -15,9 +15,9 @@ export function install(ctx:Context){
             }
             return Random.int(min,max).toString()
         })
-    p.subcommand('random.boolean')
+    p.command('random.boolean')
         .alias('random.bool')
-        .option('probability',' -p <probability:number> 可选，概率，默认0.5',{initial:0.5})
+        .option('-p [probability:number] 可选，概率，默认0.5',0.5)
         .desc('生成随机布尔值')
         .action(({options:{probability}})=>{
             return Random.bool(probability).toString()

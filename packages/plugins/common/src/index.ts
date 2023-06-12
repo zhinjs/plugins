@@ -1,4 +1,4 @@
-import {h, NSession, Context, Zhin, Schema, useOptions} from "zhin";
+import {h, NSession, Context, Zhin, Schema, useOptions, Session} from "zhin";
 import * as fs from 'fs'
 import * as music from './music'
 
@@ -39,21 +39,21 @@ export function install(ctx: Context) {
     ctx.platform('icqq')
         .command('common/thumbMe')
         .desc('为你点赞')
-        .option('times','-t <times:number> 赞多少次,默认10，每人人最多20次/天')
-        .action(async ({session,options, bot}) => {
-            const result = await bot.internal.pickUser(Number(session.user_id)).thumbUp(Math.min(options.times||10,20))
+        .option('-t <times:number> 赞多少次,默认10，每人人最多20次/天')
+        .action<NSession<'icqq','message'>>(async ({session,options}) => {
+            const result = await session.bot.internal.pickUser(Number(session.user_id)).thumbUp(Math.min(options.times||10,20))
             if (result) return '给你赞好啦'
             return '不能再赞了！！'
         })
     ctx.command('common/segment')
         .desc('生成指定消息段内容')
-    ctx.command('common/segment/face <id:integer>')
+    ctx.command('common/segment/face <id:number>')
         .desc('发送一个表情')
         .action((_, id) => h('face', {id}))
     ctx.command('common/segment/image <file:string>')
         .desc('发送一个一张图片')
         .action((_, file) => h('image', {src: file}))
-    ctx.command('common/segment/mention <user_id:string>')
+    ctx.command('common/segment/mention <user_id:user_id>')
         .desc('发送mention')
         .action((_, user_id) => h('mention', {user_id}))
     ctx.command('common/segment/dice [id:integer]')
@@ -71,12 +71,12 @@ export function install(ctx: Context) {
 export function echo(ctx: Context) {
     ctx.command('common/echo <varName:string>')
         .desc('输出当前会话中的变量值')
-        .action(async ({session, bot}, varName) => {
+        .action<Session>(async ({session}, varName) => {
             let result: any = session
             if (!varName) return '请输入变量名'
-            if (varName.match(/\(.*\)/) && !bot.isMaster(session)) return `禁止调用函数:this.${varName}`
+            if (varName.match(/\(.*\)/) && !session.isMaster) return `禁止调用函数:this.${varName}`
             let varArr = varName.split('.')
-            if (!bot.isMaster(session) && varArr.some(name => ['options', 'ctx', 'app', 'config', 'password'].includes(name))) {
+            if (!session.isMaster && varArr.some(name => ['options', 'ctx', 'app', 'config', 'password'].includes(name))) {
                 return `不可达的位置：${varName}`
             }
             try {
@@ -94,23 +94,23 @@ export function echo(ctx: Context) {
 }
 
 export function send(ctx: Context) {
-    ctx.command('common/send <message:any>')
+    ctx.command('common/send <message:string>')
         .desc('向当前上下文发送消息')
-        .option('user', '-u [user:number]  发送到用户')
-        .option('group', '-g [group:number]  发送到群')
-        .option('discuss', '-d [discuss:number]  发送到讨论组')
-        .action(async ({session, bot, options}, message) => {
+        .option('-u [user:number]  发送到用户')
+        .option('-g [group:number]  发送到群')
+        .option('-d [discuss:number]  发送到讨论组')
+        .action<Session>(async ({session, options}, message) => {
             if (!message) return '请输入需要发送的消息'
             if (options.user) {
-                await bot.sendMsg( options.user, 'private', message)
+                await session.bot.sendMsg( options.user, 'private', message)
                 return true
             }
             if (options.group) {
-                await bot.sendMsg(options.group, 'group', message)
+                await session.bot.sendMsg(options.group, 'group', message)
                 return true
             }
             if (options.discuss) {
-                await bot.sendMsg( options.discuss, 'discuss', message)
+                await session.bot.sendMsg( options.discuss, 'discuss', message)
                 return true
             }
             return message
@@ -129,7 +129,7 @@ export function recall(ctx: Context) {
     })
     ctx.command('common/recall [count:number]')
         .desc('撤回机器人发送的消息')
-        .action(async ({session, bot}, count = 1) => {
+        .action<Session>(async ({session}, count = 1) => {
             let target_id = session.group_id || session.user_id
             const list = recent[target_id] ||= []
             if (!list.length) return '近期没有发送消息。'
@@ -137,7 +137,7 @@ export function recall(ctx: Context) {
             if (!list.length) delete recent[target_id]
             for (let index = 0; index < removal.length; index++) {
                 try {
-                    await bot.deleteMsg(removal[index])
+                    await session.bot.deleteMsg(removal[index])
                 } catch (error) {
                     ctx.logger.warn(error)
                 }
@@ -154,7 +154,7 @@ export function feedback(ctx: Context) {
         const dispose = ctx.middleware((session2, next) => {
             if (session2.quote) {
                 if (session2.quote.message_id !== message_id) return next()
-                session1.reply(['来自作者的回复：\n', ...session2.elements])
+                session1.reply(['来自作者的回复：\n', session2.content])
                 dispose()
             } else next()
         })
@@ -162,7 +162,7 @@ export function feedback(ctx: Context) {
 
     ctx.command('common/feedback <message:text>')
         .desc('发送反馈信息给作者')
-        .action(async ({session, bot}, text) => {
+        .action<NSession<'icqq','message'>>(async ({session}, text) => {
             if (!text) return '请输入反馈消息'
             const name = session.sender['card'] || session.sender['title'] || session.sender.nickname
 
@@ -174,7 +174,7 @@ export function feedback(ctx: Context) {
             const message = `收到来自${fromCN[session.detail_type]()}的消息：\n${text}`
             for (let index = 0; index < operators.length; ++index) {
                 const user_id = operators[index]
-                const {message_id} = await bot.sendMsg( user_id, 'private', message)
+                const {message_id} = await session.bot.sendMsg( user_id, 'private', message)
                 createReplyCallback(ctx, session, message_id, user_id)
             }
             return '反馈成功'

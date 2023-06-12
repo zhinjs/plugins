@@ -78,10 +78,10 @@ export function install(bot: Context) {
     bot
         .command('common/music [keyword:string]')
         .desc('点歌')
-        .shortcut('点歌', {fuzzy: true})
-        .shortcut(/^(QQ|qq|扣扣)点歌(.+)$/,{args:['$2'],options:{platform:'qq'}})
-        .shortcut(/^来一首(\S+)$/, {args: ['$1']})
-        .option('platform', '-p <platform:string> 音乐平台', {initial: '163'})
+        .alias('点歌')
+        .sugar(/^(QQ|qq|扣扣)点歌(.+)$/,{args:['$2'],options:{platform:'qq'}})
+        .sugar(/^来一首(\S+)$/, {args: ['$1']})
+        .option('-p <platform:string> 音乐平台', "163")
         .action(async ({session, options}, keyword) => {
             if (!keyword) {
                 return '请正确输入搜索词'

@@ -19,7 +19,7 @@ export function install(ctx: Context) {
     ctx.middleware(async (session, next) => {
         await next()
         const mathReg = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
-        const match = session.elements.join('').match(mathReg)
+        const match = session.content.match(mathReg)
         if (!match) return
         const [, owner, repo] = match
         const src = `https://opengraph.github.com/repo/${owner}/${repo}`
@@ -32,7 +32,7 @@ export function install(ctx: Context) {
     const {appId, redirect} = config
     const subscriptions: Dict<Dict<EventConfig>> = {}
     ctx.service('github', GitHub, config)
-    const tokens: Dict<number> = Object.create(null)
+    const tokens: Dict<string|number> = Object.create(null)
     ctx.router.get(config.path + '/authorize', async (_ctx) => {
         const token = _ctx.query.state
         if (!token || Array.isArray(token)) return _ctx.status = 400
@@ -57,14 +57,15 @@ export function install(ctx: Context) {
         }
         return _ctx.status = 200
     })
-    ctx.command('github [name:string]', "group")
+    ctx.group()
+        .role('master',"admins")
+        .command('github [name:string]')
         .desc('github仓库管理指令')
         .alias('gh')
-        .auth('master', "admins")
-        .option('list', '-l')
-        .option('add', '-a')
-        .option('delete', '-d')
-        .action(async ({session, options}, name) => {
+        .option('-l [list:boolean]')
+        .option('-a [add:boolean]')
+        .option('-d [delete:boolean]')
+        .action<Session>(async ({session, options}, name) => {
             if (options.list) {
                 const names = Object.keys(session.group.github_webhooks || {})
                 if (!names.length) return '当前没有监听仓库'
@@ -83,15 +84,9 @@ export function install(ctx: Context) {
                     if (!repo) {
                         const dispose = ctx.middleware((session2, next) => {
                             dispose()
-                            const cqCode = session2.elements.join('')
+                            const cqCode = session2.content
                             if (cqCode && cqCode !== '.' && cqCode !== '。') return next()
-                            return session.execute({
-                                name: 'github.repos',
-                                session,
-                                elements:[],
-                                args: [name],
-                                options: {add: true, subscribe: true},
-                            })
+                            return session.execute(`github.repos ${name} -a -s`)
                         })
                         return `尚未添加过仓库 ${name}。发送空行或句号以立即添加并订阅该仓库`
                     }
@@ -108,11 +103,11 @@ export function install(ctx: Context) {
                 }
             }
 
-            return session.execute({session, name: 'help',elements:[], args: ['github']})
+            return session.execute(`help github`)
         })
-    ctx.command('github/github.authorize <user:string>', 'group')
+    ctx.group().command('github/github.authorize <user:string>')
         .alias('github.auth')
-        .action(async ({session}, user) => {
+        .action<Session>(async ({session}, user) => {
             if (!user) return '请输入用户名'
             const token = Random.id()
             tokens[token] = session.user_id
@@ -127,11 +122,11 @@ export function install(ctx: Context) {
         })
     const repoRegExp = /^[\w.-]+\/[\w.-]+$/
 
-    ctx.command('github/github.repos [name:string]', "group")
-        .option('add', '-a')
-        .option('delete', '-d')
-        .option('subscribe', '-s')
-        .action(async ({session, options}, name) => {
+    ctx.group().command('github/github.repos [name:string]')
+        .option('-a [add:boolean]')
+        .option('-d [delete:boolean]')
+        .option('-s [subscribe:boolean]')
+        .action<Session>(async ({session, options}, name) => {
             if (options.add || options.delete) {
                 if (!name) return '请输入仓库名'
                 if (!repoRegExp.test(name)) return '仓库名无效'
@@ -167,13 +162,7 @@ export function install(ctx: Context) {
                     }
                     await ctx.database.add('github', {name, id: data.id, secret})
                     if (!options.subscribe) return '添加成功'
-                    return session.execute({
-                        name: 'github',
-                        session,
-                        elements:[],
-                        args: [name],
-                        options: {add: true},
-                    })
+                    return session.execute(`github ${name} -a`)
                 } else {
                     if (!repo) return '删除失败'
                     try {
@@ -234,9 +223,9 @@ export function install(ctx: Context) {
             })
     }
 
-    ctx.command('github/github.issue [title] [body:text]', "group")
-        .option('repo', '-r [repo:string]')
-        .action(async ({session, options}, title, body) => {
+    ctx.group().command('github/github.issue [title:string] [body:string]')
+        .option('-r [repo:string]')
+        .action<Session>(async ({session, options}, title, body) => {
             if (!options.repo) return '请输入仓库名'
             if (!repoRegExp.test(options.repo)) return '仓库名无效'
             if (!session.member.github_accessToken) {
@@ -248,9 +237,9 @@ export function install(ctx: Context) {
                 body,
             }, '创建')
         })
-    ctx.command('github/github.star [repo]', "group")
-        .option('repo', '-r [repo:string]')
-        .action(async ({session, options}) => {
+    ctx.group().command('github/github.star [repo:string]')
+        .option('-r [repo:string]')
+        .action<Session>(async ({session, options}) => {
             if (!options.repo) return '请输入仓库名'
             if (!repoRegExp.test(options.repo)) return '仓库名无效'
             if (!session.member.github_accessToken) {
@@ -322,7 +311,7 @@ export function install(ctx: Context) {
     })
     ctx.middleware((session, next) => {
         if (!session.quote || session.detail_type !== 'group') return next()
-        const body = session.quote.element.join('')
+        const body = session.quote?.content
         const payloads = ctx.github.history[session.quote.message_id]
         if (!body || !payloads) return next()
 

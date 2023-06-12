@@ -11,48 +11,48 @@ export function install(ctx: Context) {
             session.reply(e.message)
         }
     })
-    ctx.command('game.gobang', "group")
+    const cmd=ctx.command('game.gobang')
         .desc('五子棋游戏')
-    ctx.command('game.gobang/gobang.start', "group")
+    cmd.command('gobang.start')
         .desc('开始一局五子棋游戏')
         .shortcut('下五子棋')
-        .action(async ({session}) => {
+        .action<NSession<'icqq','message.group'>>(async ({session}) => {
             if (Gobang.rooms.get(session.group_id)) {
                 return '当前已有对局'
             }
             Gobang.rooms.set(session.group_id, Gobang.createRoom(session.group_id, session.sender.user_id))
             const gobang = Gobang.rooms.get(session.group_id)
             const userCamp = gobang.players.get(session.sender.user_id)
-            return gobang.output(`你被随机分配到${userCamp}`)
+            return gobang.output(`你被随机分配到${userCamp}`).join('')
         })
-    ctx.command('game.gobang/gobang.exit', "group")
+    cmd.command('gobang.exit')
         .desc('结束当前群聊的五子棋对局')
         .shortcut('结束对局')
-        .action(async ({session, bot}) => {
+        .action<NSession<'icqq','message.group'>>(async ({session}) => {
             const gobang = Gobang.rooms.get(session.group_id)
             if (!gobang) {
                 return '当前没有对局'
             } else if ([...gobang.players.keys()].includes(session.sender.user_id)
                 || session.member.is_admin
                 || session.member.is_owner
-                || bot.isAdmin(session)
-                || bot.isMaster(session)
+                || session.isAdmin
+                || session.isMaster
             ) {
                 Gobang.rooms.delete(session.group_id)
-                return [h('mention', {user_id: session.sender.user_id}), '结束了对局']
+                return [h('mention', {user_id: session.sender.user_id}), '结束了对局'].join('')
             } else {
                 return '非对局人员和管理员无法结束对局'
             }
         })
-    ctx.command('game.gobang/gobang.revert', "group")
+    cmd.command('gobang.revert')
         .desc('悔棋')
         .shortcut('悔棋')
-        .action(({session}) => {
+        .action<NSession<'icqq','message.group'>>(({session}) => {
             const gobang = Gobang.rooms.get(session.group_id)
             if (!gobang) {
                 return '当前没有对局'
             } else {
-                return gobang.revert(session)
+                return [].concat(gobang.revert(session)).join('')
             }
         })
     ctx.disposes.push(() => {

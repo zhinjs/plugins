@@ -1,4 +1,4 @@
-import {Context,Element, Schema, useOptions} from "zhin";
+import {Context, Element,h, Schema, Session, useOptions} from "zhin";
 import * as time from './time'
 import * as math from './math'
 import * as request from './request'
@@ -12,18 +12,16 @@ export function install(ctx:Context){
     if(!config) config={}
     ctx.command('utils')
         .desc('公共工具')
-    ctx.command('取源 [source:any]')
+    ctx.command('取源')
         .desc('获取消息源文件')
-        .action(async ({session},source)=>{
-            if(!source){
-                if(session.quote) {
-                    const message=await session.bot.getMsg(session.quote.message_id)
-                    if(!message.elements) return '取不了'
-                    return Element('text',{text:message.elements.join('')})
-                }
-                source = await session.prompt.any()
+        .action<Session>(async ({session})=>{
+            if(session.quote) {
+                const message=await session.bot.getMsg(session.quote.message_id)
+                if(!message.content) return '取不了'
+                return h('text',{text:message.content})
             }
-            return Element('text',{text:source.join('')})
+            const source= await session.prompt.any('请发送')
+            return h('text',{text:Element.stringify(source)})
         })
     config.time!==false && ctx.plugin(time)
     config.math!==false && ctx.plugin(math)

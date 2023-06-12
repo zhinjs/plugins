@@ -1,4 +1,4 @@
-import {evaluate, Random, useContext, Zhin} from "zhin";
+import {evaluate, NSession, Random, useContext, Zhin} from "zhin";
 function calc24(...args:number[]){
     const expression = args.slice().sort();
     const operator = ['+','-','*','/'],result:string[] = [],hash = {};
@@ -37,7 +37,7 @@ const  gameMaps:Set<string>=new Set<string>()
 ctx.command('game.24')
     .shortcut('24点')
     .desc('24点游戏')
-.action(async ({session})=>{
+.action<NSession<'icqq','message.group'>>(async ({session})=>{
     const channel=Zhin.getChannelId(session)
     if(gameMaps.has(channel)) return '当前会话已有进行中的游戏'
     const numbers=new Array(4).fill(false).map(()=>Random.int(1,9))
@@ -46,24 +46,24 @@ ctx.command('game.24')
     await session.intercept(
         `游戏开始,请使用:${numbers.join()}与运算符拼出一个可以得到24的算式\n如果无解，请输入'无解'\n看答案，请输入'求解'(管理可用)\n如想退出，请输入'结束游戏'`,
         (session)=>{
-            if(/[0-9+\-*\/()]+/.test(session.elements.join(''))) session.reply('答案不对哦，再试试')
-            if(session.elements.join()==='求解' && (session.bot.isGroupAdmin(session) || session.bot.isGroupOwner(session) || session.bot.isMaster(session))){
+            if(/[0-9+\-*\/()]+/.test(session.content)) session.reply('答案不对哦，再试试')
+            if(session.content==='求解' && (session.bot.isGroupAdmin(session) || session.bot.isGroupOwner(session) || session.bot.isMaster(session))){
                 if(result.length) session.reply(`我算出了这么几个：\n${result.join('\n')}`)
                 else session.reply('这题无解')
             }
         },
         (session)=>{
-            if(session.elements.join('')==='无解' && result.length===0){
+            if(session.content==='无解' && result.length===0){
                 session.reply('确实无解')
                 gameMaps.delete(channel)
                 return true
             }
-            if(session.elements.join('')==='结束游戏'){
+            if(session.content==='结束游戏'){
                 session.reply('好的，马上结束')
                 gameMaps.delete(channel)
                 return true
             }
-            const input=session.elements.join('')
+            const input=session.content
             const matched=input.replace(new RegExp(`[^${Array.from(new Set(numbers)).join('')}]`,'ig'),'')
             if(matched){
                 const inputNumbers=matched.split('').map(Number)

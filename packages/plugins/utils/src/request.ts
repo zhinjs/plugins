@@ -37,9 +37,9 @@ export function install(ctx: Context) {
     }))
     const p = ctx.command('utils/axios')
         .desc('请求工具')
-    p.subcommand('axios.get <url:string>')
+    p.command('axios.get <url:string>')
         .desc('发起get请求')
-        .option('config', '-C <config:object> 配置请求config', {initial: {}})
+        .option('-C <config:json> 配置请求config', {})
         .action(async ({session, options}, url) => {
             const res = await ctx.request.get(encodeURI(url), options.config)
             try {
@@ -48,9 +48,9 @@ export function install(ctx: Context) {
                 return typeof res === 'string' ? res : undefined
             }
         })
-    p.subcommand('axios.load <url:string>')
+    p.command('axios.load <url:string>')
         .desc('加载资源')
-        .option('type', '-t [type] 资源类型，可选值：image,music,video，默认：image', {initial: 'image'})
+        .option('-t [type:string] 资源类型，可选值：image,music,video，默认：image', 'image')
         .action(async ({session, options}, url) => {
             try {
                 const res = await ctx.request.get(encodeURI(url), {
@@ -72,10 +72,10 @@ export function install(ctx: Context) {
                 return e.message
             }
         })
-    p.subcommand('axios.post <url:string>')
+    p.command('axios.post <url:string>')
         .desc('发起post请求')
-        .option('config', '-C <config:object> 配置请求config')
-        .option('data', '-d <data:object> post数据')
+        .option('-C <config:json> 配置请求config')
+        .option('-d <data:json> post数据')
         .action(async ({session, options}, url) => {
             const res = await ctx.request.post(encodeURI(url), options.data, options.config)
             try {
