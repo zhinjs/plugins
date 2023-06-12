@@ -10,7 +10,7 @@ ctx.command('咨询 <question:any>')
         await next()
         if(!session.quote) return
         dispose()
-        const preMsg=Element.stringify(session.quote.element)
+        const preMsg=Element.stringify(session.quote.content)
         if(preMsg===result){
             await session.reply(await ctx.chatgpt.getAnswerWithQuestion(session.user_id,session.content))
         }

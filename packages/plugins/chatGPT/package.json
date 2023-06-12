@@ -10,7 +10,7 @@
     }
   },
   "types": "lib/index.d.ts",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "description": "chatgpt plugin",
   "repository": {
     "type": "git",

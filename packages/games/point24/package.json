@@ -3,7 +3,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "setup": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "24点 游戏",
   "repository": {
     "type": "git",

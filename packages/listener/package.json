@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-listener",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "listener plugin",
   "setup": true,
   "using": [
