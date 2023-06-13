@@ -72,7 +72,12 @@ export class OneBot extends Bot<
     isOnline() {
         return true
     }
-
+    isGroupOwner(session){
+        return session.group?.owner_id===session.user_id
+    }
+    isGroupAdmin(session){
+        return !!session.group?.admin_flag
+    }
     createSession<E extends keyof OneBotEventMap>(event: E, ...args: Parameters<OneBotEventMap[E]>): NSession<'onebot', E> {
         let obj = typeof args[0] === "object" ? args.shift() : Object.create(null)
         if (!obj) obj = {}
