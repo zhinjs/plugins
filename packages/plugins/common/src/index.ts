@@ -38,8 +38,9 @@ export function install(ctx: Context) {
         .desc('基础功能')
     ctx.platform('icqq')
         .command('common/thumbMe')
+        .alias('赞我')
         .desc('为你点赞')
-        .option('-t <times:number> 赞多少次,默认10，每人人最多20次/天')
+        .option('-t [times:number] 赞多少次,默认10，每人人最多20次/天',10)
         .action<NSession<'icqq','message'>>(async ({session,options}) => {
             const result = await session.bot.internal.pickUser(Number(session.user_id)).thumbUp(Math.min(options.times||10,20))
             if (result) return '给你赞好啦'
