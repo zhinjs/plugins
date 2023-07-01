@@ -1,9 +1,9 @@
 import {Context,h} from "zhin";
-import {MusicPlatform} from 'oicq'
 import {default as axios} from 'axios'
 import * as qs from 'querystring'
 import * as lodash from 'lodash'
-
+/** 支持的音乐平台 */
+export type MusicPlatform = 'qq' | '163' | 'migu' | 'kugou' | 'kuwo';
 const m_ERR_CODE = Object.freeze({
     ERR_SRC: "1",
     ERR_404: "2",
