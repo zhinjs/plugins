@@ -69,6 +69,27 @@ export class OneBot extends Bot<
         if ((['http', 'ws']).includes(options.type)) this.self_id = options['self_id']
     }
 
+    isGroup(session){
+        return !!session.group_id
+    }
+    isPrivate(session){
+        return session.detail_type==='private'
+    }
+    isMaster(session){
+        return String(this.options.master)===String(session.user_id)
+    }
+    isAdmins(session){
+        return this.options.admins.map(String).includes(String(session.user_id))
+    }
+    isOwner(session){
+        return !!session.is_owner
+    }
+    isAdmin(session){
+        return !!session.is_admin
+    }
+    isAtme(session){
+        return !!session.atme
+    }
     isOnline() {
         return true
     }

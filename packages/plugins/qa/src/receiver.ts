@@ -58,13 +58,7 @@ export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bot
             dialogue.answer = dialogue?.answer.replace(reg, args[index])
         }
     }
-    let answerText=dialogue.answer
-        .replace(/\$0/g,question)
-    try{
-        return await session.render(Element.parse(answerText,session))
-    }catch{
-        return answerText
-    }
+    return dialogue.answer.replace(/\$0/g,question)
 }
 export const name='qa.receiver'
 export function install(ctx: Context) {
@@ -76,8 +70,7 @@ export function install(ctx: Context) {
         if(session.type==='message'){
             const tpl=await triggerTeach(ctx, session).catch(()=>{})
             if(!tpl) return
-            const result=await session.render(tpl)
-            if(result) session.reply(result)
+            session.reply(tpl)
         }
     },true)
 }
