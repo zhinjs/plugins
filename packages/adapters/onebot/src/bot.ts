@@ -65,7 +65,7 @@ export class OneBot extends Bot<
 
     reconnect_times: number = 0
 
-    constructor(public zhin: Zhin, public adapter: OneBotAdapter, public options: BotOptions<OneBot.Options<keyof OneBotAdapter.AdapterOptions>>) {
+    constructor(public zhin: Zhin, public adapter: OneBotAdapter,options: BotOptions<OneBot.Options<keyof OneBotAdapter.AdapterOptions>>) {
         super(zhin, adapter, options);
         if ((['http', 'ws']).includes(options.type)) this.self_id = options['self_id']
     }

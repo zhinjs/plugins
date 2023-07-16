@@ -41,7 +41,7 @@ export function fromFragment(fragment: Element.Fragment): Types.Message {
                     user_id:ele.attrs.user_id,
                     nickname:ele.attrs.nickname,
                     time:ele.attrs.time,
-                    message:fromFragment(ele.children)
+                    message:fromFragment(ele.children||ele.attrs.message)
                 }
             }
         }
