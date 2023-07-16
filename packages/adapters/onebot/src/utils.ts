@@ -34,6 +34,16 @@ export function fromFragment(fragment: Element.Fragment): Types.Message {
             } as unknown as Types.Segment
         } else if (ele.type === 'mention' && !ele.attrs.user_id) {
             return {type: 'mention_all', data: ele.attrs} as unknown as Types.Segment
+        }else if(ele.type==='node'){
+            return {
+                type:'node',
+                data:{
+                    user_id:ele.attrs.user_id,
+                    nickname:ele.attrs.nickname,
+                    time:ele.attrs.time,
+                    message:fromFragment(ele.children)
+                }
+            }
         }
         return {
             type: ele.type, data: Object.fromEntries(Object.entries(ele.attrs || {}).map(([key, v]) => {
