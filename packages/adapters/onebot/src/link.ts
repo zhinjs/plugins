@@ -15,6 +15,8 @@ export function createHttpHandler(bot: OneBot, options: OneBot.Options<'http'>) 
             return config
         })
     }
+    bot.connect_status = 'connected';
+    bot.emit('bot.online',bot.self_id)
     const cachedEvent: number[] = []
     bot.sendPayload = function (payload) {
         return new Promise(resolve => {
@@ -57,6 +59,7 @@ export function createHttpHandler(bot: OneBot, options: OneBot.Options<'http'>) 
     }, options.get_events_interval)
     return () => {
         dispose()
+        bot.connect_status = 'disconnected';
         bot.sendPayload = () => {
         }
     }
@@ -86,11 +89,14 @@ export function createWebhookHandler(bot: OneBot, options: OneBot.Options<'webho
         bot.logger.debug(`发送动作队列成功`)
         history = []
     })
+    bot.connect_status = 'connected';
+    bot.emit('bot.online',bot.self_id)
     bot.sendPayload = function (payload) {
         history.push(payload)
     }
     return () => {
         bot.zhin.router.destroy(hookRoute)
+        bot.connect_status='disconnected';
         bot.zhin.router.destroy(actionsRoute)
         bot.sendPayload = () => {
         }
@@ -106,9 +112,14 @@ export function createWsHandler(bot: OneBot, options: OneBot.Options<'ws'>) {
     })
     socket.on('open', () => {
         bot.logger.info(`已连接到协议端：(${options.url})`)
+        bot.emit('bot.online',bot.self_id)
+        bot.reconnect_times = 0
+        bot.connect_status = 'connected';
     })
     socket.on('close', (code, reason) => {
         bot.logger.info(`与协议端(${options.url})断开连接`)
+        bot.connect_status = 'disconnected';
+        bot.emit('bot.offline',bot.self_id)
         bot.logger.debug(`code:${code},reason:${reason.toString('utf8')}`)
         if (bot.reconnect_times < max_reconnect_times) {
             bot.logger.info(`将在${reconnect_interval / 1000}秒后重连...`)
@@ -166,11 +177,18 @@ export function createWsReverseHandler(bot: OneBot, options: OneBot.Options<'ws_
                 bot.adapter.dispatch(event.type, bot.createSession(event.type, event))
             }
         })
+        ws.on('connection', () => {
+            bot.emit('bot.online',bot.self_id)
+            bot.reconnect_times = 0
+            bot.connect_status = 'connected';
+        })
         ws.on("error", (err) => {
             bot.logger.error(`协议端(${getReqIp(req)})报错`, err)
         })
         ws.on('close', (e) => {
             bot.logger.error(`与协议端(${getReqIp(req)})断开连接`)
+            bot.connect_status = 'disconnected';
+            bot.emit('bot.offline',bot.self_id)
             wss.delete(ws)
         })
     })

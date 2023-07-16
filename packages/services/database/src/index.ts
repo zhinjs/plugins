@@ -159,8 +159,8 @@ class Database {
                         ignore: false
                     }
                 })
-                Object.assign(session.group, omit(groupInfo.toJSON()||{}, ['group_id', 'name']))
-                Object.assign(session.member, omit(userInfo.toJSON()||{}, ['user_id', 'name']))
+                Object.assign(session.group||={} as any, omit(groupInfo.toJSON()||{}, ['group_id', 'name']))
+                Object.assign(session.member||={} as any, omit(userInfo.toJSON()||{}, ['user_id', 'name']))
             } else if (session.detail_type === 'discuss') {
                 const {discuss_id, discuss_name} = session
                 const [groupInfo] = await this.models.Group.findOrCreate({
@@ -171,7 +171,7 @@ class Database {
                         ignore: false
                     }
                 })
-                Object.assign(session.discuss||{}, omit(groupInfo.toJSON()||{}, ['group_id', 'name']))
+                Object.assign(session.discuss||={} as any, omit(groupInfo.toJSON()||{}, ['group_id', 'name']))
             } else {
                 Object.assign(session.friend || (session.user||={} as any), omit(userInfo.toJSON(), ['user_id', 'name']))
             }

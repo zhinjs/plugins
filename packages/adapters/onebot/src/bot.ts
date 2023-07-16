@@ -31,6 +31,7 @@ export class OneBot extends Bot<
     `onebot`,
     OneBot.Options<keyof OneBotAdapter.AdapterOptions>,
     OneBotAdapter.Options, string> {
+    connect_status:string= 'disconnected';
     stat = {
         start_time: 0,
         lost_times: 0,
@@ -87,11 +88,11 @@ export class OneBot extends Bot<
     isAdmin(session){
         return !!session.is_admin
     }
-    isAtme(session){
+    isAtMe(session){
         return !!session.atme
     }
     isOnline() {
-        return true
+        return this.connect_status === 'connected'
     }
     isGroupOwner(session){
         return session.group?.owner_id===session.user_id
