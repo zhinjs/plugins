@@ -63,7 +63,7 @@ export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bot
 export const name='qa.receiver'
 export function install(ctx: Context) {
     let preMessageId:string=''
-    ctx.zhin.middleware(async (session,next) =>{
+    ctx.middleware(async (session,next) =>{
         await next()
         if(preMessageId===session.message_id) return
         preMessageId=session.message_id
@@ -71,6 +71,6 @@ export function install(ctx: Context) {
             const tpl=await triggerTeach(ctx, session).catch(()=>{})
             if(!tpl) return
             session.reply(tpl)
-        }
+        };
     },true)
 }

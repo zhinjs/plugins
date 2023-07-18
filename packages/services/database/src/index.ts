@@ -89,13 +89,32 @@ class Database {
 
     constructor(public ctx: Context, public options: Options) {
         this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
-        this.define('User', UserTable.model)
-        this.define('Group', GroupTable.model)
+        this.define('User', UserTable.model);
+        this.define('Group', GroupTable.model);
     }
-
+    onReady(fn:()=>void){
+        if(this.isReady){
+            fn()
+        }else{
+            return this.ctx.zhin.on('database-ready',fn)
+        }
+    }
+    onCreated(fn:()=>void){
+        if(this.isReady){
+            fn()
+        }else{
+            return this.ctx.zhin.on('database-created',fn)
+        }
+    }
+    onMounted(fn:()=>void){
+        if(this.isReady){
+            fn()
+        }else{
+            return this.ctx.zhin.on('database-mounted',fn)
+        }
+    }
     async start() {
         await this.ctx.zhin.emitSync('database-created')
-        this.ctx.zhin.listeners('database-create').map((l)=>console.log(l+''))
         Object.entries(this.modelDecl).forEach(([name, decl]) => {
             this.sequelize.define(name, decl, {timestamps: false})
         })

@@ -52,7 +52,7 @@ template.set('teach', {
 })
 export const using=['database']
 export function install(ctx: Context) {
-    ctx.command('qa [question:string] [answer:string]')
+    ctx.command('qa [question:string] [answer:text]')
         .desc('问答管理')
         .option('-l [list:boolean] 查看问答列表')
         .option('-i [info:integer] 查看指定教学详情')

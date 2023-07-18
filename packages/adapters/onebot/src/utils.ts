@@ -24,6 +24,21 @@ export function toElement<S>(message: Types.Message, ctx?: S): Element[] {
 }
 
 export function fromFragment(fragment: Element.Fragment): Types.Message {
+    const allowTypes=[
+        'text',
+        'image',
+        'face',
+        'record',
+        'video',
+        'audio',
+        'file',
+        'mention',
+        'mention_all',
+        'node',
+        'rps',
+        'dice',
+        'poke',
+    ]
     if (typeof fragment !== 'object') return Element.unescape(String(fragment))
     return [].concat(fragment).filter(Boolean).map((ele: Element | string) => {
         if (typeof ele === 'string') return Element.unescape(ele)
@@ -45,10 +60,18 @@ export function fromFragment(fragment: Element.Fragment): Types.Message {
                 }
             }
         }
+        if(!allowTypes.includes(ele.type)) return {
+            type:'text',
+            data:{
+                text:ele.source??ele.children?.toString()
+            }
+        }
         return {
-            type: ele.type, data: Object.fromEntries(Object.entries(ele.attrs || {}).map(([key, v]) => {
-                return [key, typeof v === 'string' ? Element.unescape(v) : v]
-            }))
+            type: ele.type,
+            data: {
+                ...ele.attrs,
+                text:Element.unescape(ele.attrs?.text||ele.children?.toString()||'')
+            }
         } as unknown as Types.Segment
     }) as Types.Message
 }
