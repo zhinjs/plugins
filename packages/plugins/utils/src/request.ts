@@ -37,7 +37,7 @@ export function install(ctx: Context) {
     }))
     ctx.command('utils/axios')
         .desc('请求工具')
-    ctx.command('utils/axios.get <url:string>')
+    ctx.command('utils/axios/axios.get <url:string>')
         .desc('发起get请求')
         .option('-C <config:json> 配置请求config', {})
         .action(async ({session, options}, url) => {
@@ -48,7 +48,7 @@ export function install(ctx: Context) {
                 return typeof res === 'string' ? res : undefined
             }
         })
-    ctx.command('utils/axios.load <url:string>')
+    ctx.command('utils/axios/axios.load <url:string>')
         .desc('加载资源')
         .option('-t [type:string] 资源类型，可选值：image,music,video，默认：image', 'image')
         .action(async ({session, options}, url) => {
@@ -72,7 +72,7 @@ export function install(ctx: Context) {
                 return e.message
             }
         })
-    ctx.command('utils/axios.post <url:string>')
+    ctx.command('utils/axios/axios.post <url:string>')
         .desc('发起post请求')
         .option('-C <config:json> 配置请求config')
         .option('-d <data:json> post数据')

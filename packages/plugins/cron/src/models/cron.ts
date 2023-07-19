@@ -12,7 +12,7 @@ export namespace CronTable{
         command: string
     }
     export const model:TableDecl={
-        assignee:DataTypes.INTEGER,
+        assignee:DataTypes.STRING,
         time:DataTypes.DATE,
         lastCall:DataTypes.DATE,
         interval:DataTypes.INTEGER,

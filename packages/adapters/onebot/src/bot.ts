@@ -105,7 +105,7 @@ export class OneBot extends Bot<
         if (!obj) obj = {}
         Object.assign(obj, {
             bot: this,
-            protocol: 'oneBot',
+            protocol: 'onebot',
             adapter: this.adapter,
             event,
             user_id: obj.user_id || obj.sender?.user_id || obj.sender?.tiny_id,

@@ -70,7 +70,7 @@ export function install(ctx: Context) {
 }
 
 export function echo(ctx: Context) {
-    ctx.command('common/echo <varName:string>')
+    ctx.command('common/echo <varName:text>')
         .desc('输出当前会话中的变量值')
         .action<Session>(async ({session}, varName) => {
             let result: any = session
@@ -95,7 +95,7 @@ export function echo(ctx: Context) {
 }
 
 export function send(ctx: Context) {
-    ctx.command('common/send <message:string>')
+    ctx.command('common/send <message:text>')
         .desc('向当前上下文发送消息')
         .option('-u [user:number]  发送到用户')
         .option('-g [group:number]  发送到群')

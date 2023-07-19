@@ -1,7 +1,7 @@
 import {formatContext, isSameEnv} from "./utils";
 import {CronTable} from "./models";
 import '@zhinjs/plugin-database'
-import { Context, NSession, Time, Zhin} from "zhin";
+import {Context, Session, Time, Zhin} from "zhin";
 export const using=['database'] as const
 export interface Config {
     minInterval?: number
@@ -20,13 +20,15 @@ export function install(ctx: Context, config: Config={}) {
         return !!data.length
     }
 
-    async function prepareCron({ id, interval, command, time, lastCall }: CronTable.Types, session: NSession<keyof Zhin.Bots>) {
+    async function prepareCron<P extends keyof Zhin.Adapters>({ id, interval, command, time, lastCall }: CronTable.Types,self_id:string|number, session: Session<P>) {
         const now = Date.now()
         const date = time.valueOf()
-
+        const adapter=ctx.zhin.adapters.get(session.protocol) as Zhin.Adapters[P]
+        if (!adapter) return
+        session=new Session<P>(adapter,self_id,session.event,session)
         async function executeCron() {
             ctx.logger.debug('execute %d: %s', id, command)
-            let result=await session.execute(`exec ${command}`)
+            let result=await session.execute(command)
             if(result && typeof result!=='boolean')await ctx.zhin.sendMsg({
                 protocol:session.protocol,
                 bot_id:session.bot.self_id,
@@ -73,23 +75,22 @@ export function install(ctx: Context, config: Config={}) {
         const crons = await ctx.database.get('cron',{})
         crons.forEach((cron) => {
             const schedule=cron.toJSON()
-            const { session } = schedule
-            prepareCron(schedule, session)
+            const { session,assignee } = schedule
+            prepareCron(schedule,assignee, session)
         })
     })
 
-    ctx.command('cron [time:string]')
+    ctx.command('cron [time:string] [command:text]')
         .desc('定时任务')
-        .option('-r [rest:text]  要执行的指令')
         .option( '-i [interval:string]  设置触发的间隔秒数')
         .option('-l [list:boolean]  查看已经设置的日程')
         .option('-e [ensure:boolean]  错过时间也确保执行')
         .option( '-f [full:boolean] 查找全部上下文')
-        .option( '-d [delete:boolean]  删除已经设置的日程')
-        .action<NSession < keyof Zhin.Adapters>>(async ({ session, options }, ...dateSegments) => {
-            if (options.delete) {
-                await ctx.database.delete('cron',{id:options.delete})
-                return `日程 ${options.delete} 已删除。`
+        .option( '-d [del:number]  删除已经设置的日程')
+        .action<Session>(async ({ session, options }, dateStr,command) => {
+            if (options.del) {
+                await ctx.database.delete('cron',{id:options.del})
+                return `日程 ${options.del} 已删除。`
             }
 
             if (options.list) {
@@ -105,19 +106,17 @@ export function install(ctx: Context, config: Config={}) {
                 }).join('\n')
             }
 
-            if (!options.rest) return '请输入要执行的指令。'
-
-            const dateString = dateSegments.join('-')
-            const time = Time.parseDate(dateString)
+            if (!command) return '请输入要执行的指令。'
+            const time = Time.parseDate(dateStr)
             const timestamp = +time
             if (Number.isNaN(timestamp) || timestamp > 2147483647000) {
-                if (/^\d+$/.test(dateString)) {
-                    return `请输入合法的日期。你要输入的是不是 ${dateString}s？`
+                if (/^\d+$/.test(dateStr)) {
+                    return `请输入合法的日期。你要输入的是不是 ${dateStr}s？`
                 } else {
                     return '请输入合法的日期。'
                 }
             } else if (!options.interval) {
-                if (!dateString) {
+                if (!dateStr) {
                     return '请输入执行时间。'
                 } else if (timestamp <= Date.now()) {
                     return '不能指定过去的时间为执行时间。'
@@ -135,10 +134,10 @@ export function install(ctx: Context, config: Config={}) {
                 time,
                 assignee: session.bot.self_id,
                 interval,
-                command: options.rest,
+                command,
                 session: session,
             })
-            prepareCron(cron.toJSON(), session)
+            prepareCron(cron.toJSON(),session.bot.self_id, session)
             return `日程已创建，编号为 ${cron.toJSON().id}。`
         })
 }
