@@ -81,12 +81,12 @@ export function install(ctx: Context, config: Config={}) {
     })
 
     ctx.command('cron [time:string] [command:text]')
-        .desc('定时任务')
-        .option( '-i [interval:string]  设置触发的间隔秒数')
-        .option('-l [list:boolean]  查看已经设置的日程')
+        .desc('定义定时执行指令')
+        .option( '-i [interval:string]  设置执行的间隔时间')
+        .option('-l [list:boolean]  查看已经设置的执行队列')
         .option('-e [ensure:boolean]  错过时间也确保执行')
         .option( '-f [full:boolean] 查找全部上下文')
-        .option( '-d [del:number]  删除已经设置的日程')
+        .option( '-d [del:number]  删除已经设置的执行任务')
         .action<Session>(async ({ session, options }, dateStr,command) => {
             if (options.del) {
                 await ctx.database.delete('cron',{id:options.del})
