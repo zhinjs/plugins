@@ -1,7 +1,7 @@
 import {formatContext, isSameEnv} from "./utils";
 import {CronTable} from "./models";
 import '@zhinjs/plugin-database'
-import {Context, Session, Time, Zhin} from "zhin";
+import {Context, Session,Element, Time, Zhin} from "zhin";
 export const using=['database'] as const
 export interface Config {
     minInterval?: number
@@ -29,12 +29,7 @@ export function install(ctx: Context, config: Config={}) {
         async function executeCron() {
             ctx.logger.debug('execute %d: %s', id, command)
             let result=await session.execute(command)
-            if(result && typeof result!=='boolean')await ctx.zhin.sendMsg({
-                protocol:session.protocol,
-                bot_id:session.bot.self_id,
-                target_id:session.group_id ||  session.discuss_id || session.user_id,
-                target_type:session.detail_type as any,
-            },result)
+            if(result && typeof result!=='boolean')await session.reply(result)
             if (!lastCall || !interval) return
             lastCall = new Date()
             await ctx.database.set('cron',{id},{ lastCall })
@@ -100,7 +95,8 @@ export function install(ctx: Context, config: Config={}) {
                 }
                 if (!schedules.length) return '当前没有等待执行的日程。'
                 return schedules.map(({ id, time, interval, command, session }) => {
-                    let output = `${id}. ${Time.formatTimeInterval(time, interval)}：${command}`
+                    // 输出结果编码下，避免执行
+                    let output = `${id}. ${Time.formatTimeInterval(time, interval)}：${Element.escape(command)}`
                     if (options.full) output += `，上下文：${formatContext(session)}`
                     return output
                 }).join('\n')
