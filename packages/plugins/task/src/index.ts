@@ -1,4 +1,4 @@
-import {Context, Session, template,Element} from "zhin";
+import {Context, Session, template, Element} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
 import {Model} from "sequelize";
@@ -97,21 +97,22 @@ export function install(ctx: Context) {
 
 class Tasks {
     constructor(public ctx: Context) {
-        if (ctx.database) {
-            ctx.database.define('Task', Task)
-            ctx.database.define('TaskStep', TaskStep)
-        }
-        ctx.disposes.push(
-            ctx.zhin.on('database-created', () => {
-                ctx.database.define('Task', Task)
-                ctx.database.define('TaskStep', TaskStep)
-            }),
-            ctx.zhin.on('database-mounted', () => {
-                const {Task, TaskStep} = ctx.database.models
-                Task.hasMany(TaskStep, {as: 'steps'})
-                TaskStep.belongsTo(Task)
-            })
-        )
+        ctx.beforeReady(async () => {
+            ctx.disposes.push(
+                await ctx.database.onCreated(() => {
+                    ctx.database.define('Task', Task)
+                    ctx.database.define('TaskStep', TaskStep)
+                }),
+                await ctx.database.onMounted(() => {
+                    const {Task, TaskStep} = ctx.database.models
+                    Task.hasMany(TaskStep, {as: 'steps'})
+                    TaskStep.belongsTo(Task)
+                }), await ctx.database.onReady(() => {
+                    ctx.database.sequelize.sync({alter: {drop: false}})
+                })
+            )
+
+        })
     }
 
     get taskModel() {

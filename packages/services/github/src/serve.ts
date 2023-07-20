@@ -1,25 +1,27 @@
-import {Context, Dict, Session, Element, Schema,Request} from "zhin";
+import {Context, Dict, Session, Element, Schema, Request} from "zhin";
 import {DataTypes} from "sequelize";
-import { Method } from 'axios'
+import {Method} from 'axios'
 import {GithubTable} from "./models/github";
 import {EventConfig} from './events'
+
 export type ReplyPayloads = {
     [K in keyof ReplyHandler]?: ReplyHandler[K] extends (...args: infer P) => any ? P : never
 }
-declare module '@zhinjs/plugin-database'{
-    namespace UserTable{
-        interface Types{
+declare module '@zhinjs/plugin-database' {
+    namespace UserTable {
+        interface Types {
             github_accessToken: string
             github_refreshToken: string
         }
     }
-    namespace GroupTable{
-        interface Types{
-            github_webhooks:Dict<EventConfig>
+    namespace GroupTable {
+        interface Types {
+            github_webhooks: Dict<EventConfig>
         }
     }
 }
 export type EventData<T = {}> = [string, (ReplyPayloads & T)?]
+
 export interface OAuth {
     access_token: string
     expires_in: string
@@ -28,50 +30,59 @@ export interface OAuth {
     token_type: string
     scope: string
 }
-declare module '@zhinjs/plugin-database'{
-    namespace GroupTable{
-        interface Types{
-            github_webhooks:Dict<EventConfig>
+
+declare module '@zhinjs/plugin-database' {
+    namespace GroupTable {
+        interface Types {
+            github_webhooks: Dict<EventConfig>
         }
     }
-    namespace UserTable{
-        interface Types{
-            github_accessToken:string
-            github_refreshToken:string
+    namespace UserTable {
+        interface Types {
+            github_accessToken: string
+            github_refreshToken: string
         }
     }
 }
-export class GitHub{
+
+export class GitHub {
     public history: Dict<ReplyPayloads> = Object.create(null)
     private http: Request
-    constructor(public ctx:Context,public config:Config) {
-        this.http=ctx.request.extend({})
-        if(ctx.database){
-            this.init()
-        }
-        ctx.disposes.push(this.ctx.zhin.on('database-created',()=>{
-            this.init()
-        }))
-    }
-    init(){
-        this.ctx.database.extend('User',{
-            github_accessToken:DataTypes.STRING,
-            github_refreshToken:DataTypes.STRING
+
+    constructor(public ctx: Context, public config: Config) {
+        this.http = ctx.request.extend({})
+        ctx.beforeReady(async () => {
+            ctx.disposes.push(
+                await ctx.database.onCreated(() => {
+                    this.init()
+                }),
+                await ctx.database.onReady(() => {
+                    ctx.database.sequelize.sync({alter: {drop: false}})
+                })
+            )
         })
-        this.ctx.database.extend('Group',{
-            github_webhooks:{
-                type:DataTypes.TEXT,
-                get():Dict<EventConfig> {
-                    return JSON.parse(this.getDataValue('github_webhooks')||'{}')
+    }
+
+    init() {
+        this.ctx.database.extend('User', {
+            github_accessToken: DataTypes.STRING,
+            github_refreshToken: DataTypes.STRING
+        })
+        this.ctx.database.extend('Group', {
+            github_webhooks: {
+                type: DataTypes.TEXT,
+                get(): Dict<EventConfig> {
+                    return JSON.parse(this.getDataValue('github_webhooks') || '{}')
                 },
-                set(value:Dict<EventConfig>){
-                    this.setDataValue('github_webhooks',JSON.stringify(value))
+                set(value: Dict<EventConfig>) {
+                    this.setDataValue('github_webhooks', JSON.stringify(value))
                 }
             }
 
         })
-        this.ctx.database.define('github',GithubTable.model)
+        this.ctx.database.define('github', GithubTable.model)
     }
+
     async getTokens(params: any) {
         return this.http.post<OAuth>('https://github.com/login/oauth/access_token', {}, {
             params: {
@@ -79,10 +90,11 @@ export class GitHub{
                 client_secret: this.config.appSecret,
                 ...params,
             },
-            headers: { Accept: 'application/json' },
+            headers: {Accept: 'application/json'},
             timeout: this.config.requestTimeout,
         })
     }
+
     private async _request(method: Method, url: string, replyMsg: Session, data?: any, headers?: Dict) {
         this.ctx.logger.debug(method, url, data)
         return this.http(method, url, {
@@ -95,6 +107,7 @@ export class GitHub{
             timeout: this.config.requestTimeout,
         })
     }
+
     async authorize(session: Session, message: string) {
         const name = await session.prompt.text(message)
         if (name) {
@@ -103,8 +116,9 @@ export class GitHub{
             await session.reply('输入超时')
         }
     }
-    async request(method: Method, url: string, session:Session, body?: any, headers?: Dict) {
-        if(session.detail_type!=='group') return '只能在群聊中使用'
+
+    async request(method: Method, url: string, session: Session, body?: any, headers?: Dict) {
+        if (session.detail_type !== 'group') return '只能在群聊中使用'
         if (!session.member.github_accessToken) {
             return this.authorize(session, '要使用此功能，请对机器人进行授权。输入你的 GitHub 用户名。')
         }
@@ -129,6 +143,7 @@ export class GitHub{
         return await this._request(method, url, session, body, headers)
     }
 }
+
 export interface Config {
     path?: string
     appId?: string
@@ -139,18 +154,21 @@ export interface Config {
     replyTimeout?: number
     requestTimeout?: number
 }
-export const Config=Schema.object({
-    path:Schema.string().description('webhook路径').default('/github'),
-    appId:Schema.string().description('Github AppId').required(true),
-    appSecret:Schema.string().description('Github AppSecret').required(true),
-    messagePrefix:Schema.string().description('消息前缀'),
-    redirect:Schema.string().description('请求回调地址').default('/redirect'),
-    promptTimeout:Schema.number().description('会话超时时间').default(60000),
-    replyTimeout:Schema.number().description('回复超时时间').default(60000),
-    requestTimeout:Schema.number().description('请求超时时间').default(60000),
+
+export const Config = Schema.object({
+    path: Schema.string().description('webhook路径').default('/github'),
+    appId: Schema.string().description('Github AppId').required(true),
+    appSecret: Schema.string().description('Github AppSecret').required(true),
+    messagePrefix: Schema.string().description('消息前缀'),
+    redirect: Schema.string().description('请求回调地址').default('/redirect'),
+    promptTimeout: Schema.number().description('会话超时时间').default(60000),
+    replyTimeout: Schema.number().description('回复超时时间').default(60000),
+    requestTimeout: Schema.number().description('请求超时时间').default(60000),
 })
+
 export class ReplyHandler {
-    constructor(public github: GitHub, public ctxEvent: Session, public content?: string) {}
+    constructor(public github: GitHub, public ctxEvent: Session, public content?: string) {
+    }
 
     async request(method: Method, url: string, message: string, body?: any, headers?: Dict) {
         try {
@@ -165,7 +183,7 @@ export class ReplyHandler {
     }
 
     react(url: string) {
-        return this.request('POST', url,'发送失败', {
+        return this.request('POST', url, '发送失败', {
             content: this.content,
         }, {
             accept: 'application/vnd.github.squirrel-girl-preview',
@@ -173,8 +191,8 @@ export class ReplyHandler {
     }
 
     async transform(source: string) {
-        const [{type,attrs:{url,text}}]=Element.parse(source)
-        return type!=='image'?text:`![${text}](${url})`
+        const [{type, attrs: {url, text}}] = Element.parse(source)
+        return type !== 'image' ? text : `![${text}](${url})`
     }
 
     async reply(url: string, params?: Dict) {

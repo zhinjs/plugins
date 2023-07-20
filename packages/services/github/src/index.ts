@@ -41,20 +41,19 @@ export function install(ctx: Context) {
         delete tokens[token]
         const {code, state} = _ctx.query
         const data = await ctx.github.getTokens({code, state, redirect_uri: redirect})
-        if (ctx.database.isReady) {
-            await database.model('User').update({
-                github_accessToken: data.access_token,
-                github_refreshToken: data.refresh_token,
-            }, {where: {user_id}})
-        } else {
+        await ctx.beforeReady(async () => {
             ctx.disposes.push(
-                ctx.zhin.on('database-ready', async () => {
+                await ctx.database.onCreated(async () => {
                     await database.model('User').update({
                         github_accessToken: data.access_token,
                         github_refreshToken: data.refresh_token,
                     }, {where: {user_id}})
-                }))
-        }
+                }),
+                await ctx.database.onReady(() => {
+                    ctx.database.sequelize.sync({alter: {drop: true}})
+                })
+            )
+        })
         return _ctx.status = 200
     })
     ctx.group()
@@ -248,16 +247,19 @@ export function install(ctx: Context) {
 
             return request('PUT', `/user/starred/${options.repo}`, session, null, '操作')
         })
-    ctx.disposes.push(ctx.zhin.on('database-ready', async () => {
-        const channels = await ctx.database.get('Group')
-        for (const channel of channels) {
-            const {github_webhooks, group_id} = channel.toJSON()
-            if (!github_webhooks) continue
-            for (const repo in github_webhooks) {
-                subscribe(repo, group_id, github_webhooks[repo])
+    ctx.beforeReady(async ()=>{
+        await ctx.database.onReady(async ()=>{
+            const channels = await ctx.database.get('Group')
+            for (const channel of channels) {
+                const {github_webhooks, group_id} = channel.toJSON()
+                if (!github_webhooks) continue
+                for (const repo in github_webhooks) {
+                    subscribe(repo, group_id, github_webhooks[repo])
+                }
             }
-        }
-    }))
+        })
+
+    })
     const reactions = ['+1', '-1', 'laugh', 'confused', 'heart', 'hooray', 'rocket', 'eyes']
 
     function safeParse(source: string) {

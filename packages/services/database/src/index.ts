@@ -1,4 +1,4 @@
-import {Context, Dict, Dispose, omit, Schema, useOptions} from "zhin";
+import {Context, Dict, Dispose, omit, Schema, ToDispose, useOptions, Zhin} from "zhin";
 import {Sequelize, Model, Options, DataType, ModelStatic} from "sequelize";
 
 export * from 'sequelize'
@@ -67,16 +67,13 @@ export const Config = Schema.object({
     timezone: Schema.string().description('时区')
 })
 
-export function install(ctx: Context) {
+export async function install(ctx: Context) {
     const options = Config(useOptions('services.database'))
     ctx.service('database', Database, options as Options)
-    if(ctx.zhin.isReady){
-        ctx.database.start()
-    }else{
-        ctx.zhin.on('ready',()=>{
-            ctx.database.start()
-        })
-    }
+    ctx.disposes.push(await ctx.zhin.beforeReady(async ()=>{
+        ctx.database = ctx.service('database');
+        await ctx.database.start()
+    }))
     ctx.disposes.unshift(() => {
         ctx.database.disconnect()
     })
@@ -92,26 +89,23 @@ class Database {
         this.define('User', UserTable.model);
         this.define('Group', GroupTable.model);
     }
-    onReady(fn:()=>void){
+    async onCreated<T>(fn:()=>T|Promise<T>):Promise<ToDispose<Zhin>>{
         if(this.isReady){
             fn()
-        }else{
-            return this.ctx.zhin.on('database-ready',fn)
         }
+        return await this.ctx.zhin.on('database-created',fn)
     }
-    onCreated(fn:()=>void){
+    async onMounted<T>(fn:()=>T|Promise<T>):Promise<ToDispose<Zhin>>{
         if(this.isReady){
             fn()
-        }else{
-            return this.ctx.zhin.on('database-created',fn)
         }
+        return this.ctx.zhin.on('database-mounted',fn)
     }
-    onMounted(fn:()=>void){
+    async onReady<T>(fn:()=>T|Promise<T>):Promise<ToDispose<Zhin>>{
         if(this.isReady){
             fn()
-        }else{
-            return this.ctx.zhin.on('database-mounted',fn)
         }
+        return this.ctx.zhin.on('database-ready',fn)
     }
     async start() {
         await this.ctx.zhin.emitSync('database-created')
