@@ -16,7 +16,7 @@ export function createHttpHandler(bot: OneBot, options: OneBot.Options<'http'>) 
         })
     }
     bot.connect_status = 'connected';
-    bot.emit('bot.online',bot.self_id)
+    bot.adapter.emit('bot.online',bot.self_id)
     const cachedEvent: number[] = []
     bot.sendPayload = function (payload) {
         return new Promise(resolve => {
@@ -54,11 +54,12 @@ export function createHttpHandler(bot: OneBot, options: OneBot.Options<'http'>) 
                 bot.logger.error(`预期之外的错误码：`, res.status)
             }
         }).catch(e => {
-            bot.logger.error(`无法获取最新事件，请确认协议端是否支持该API`)
+            bot.logger.error(`无法获取最新事件，请确认协议端是否支持该API(get_latest_events)`)
         })
     }, options.get_events_interval)
     return () => {
         dispose()
+        bot.adapter.emit('bot.offline',bot.self_id)
         bot.connect_status = 'disconnected';
         bot.sendPayload = () => {
         }
@@ -90,13 +91,14 @@ export function createWebhookHandler(bot: OneBot, options: OneBot.Options<'webho
         history = []
     })
     bot.connect_status = 'connected';
-    bot.emit('bot.online',bot.self_id)
+    bot.adapter.emit('bot.online',bot.self_id)
     bot.sendPayload = function (payload) {
         history.push(payload)
     }
     return () => {
         bot.zhin.router.destroy(hookRoute)
         bot.connect_status='disconnected';
+        bot.adapter.emit('bot.offline',bot.self_id)
         bot.zhin.router.destroy(actionsRoute)
         bot.sendPayload = () => {
         }
@@ -111,21 +113,21 @@ export function createWsHandler(bot: OneBot, options: OneBot.Options<'ws'>) {
         }
     })
     socket.on('open', () => {
-        bot.logger.info(`已连接到协议端：(${options.url})`)
-        bot.emit('bot.online',bot.self_id)
+        bot.logger.debug(`已连接到协议端：(${options.url})`)
+        bot.adapter.emit('bot.online',bot.self_id)
         bot.reconnect_times = 0
         bot.connect_status = 'connected';
     })
     socket.on('close', (code, reason) => {
-        bot.logger.info(`与协议端(${options.url})断开连接`)
+        bot.logger.error(`与协议端(${options.url})断开连接`)
         bot.connect_status = 'disconnected';
-        bot.emit('bot.offline',bot.self_id)
+        bot.adapter.emit('bot.offline',bot.self_id)
         bot.logger.debug(`code:${code},reason:${reason.toString('utf8')}`)
         if (bot.reconnect_times < max_reconnect_times) {
-            bot.logger.info(`将在${reconnect_interval / 1000}秒后重连...`)
+            bot.logger.debug(`将在${reconnect_interval / 1000}秒后重连...`)
             bot.reconnect_times++
             bot.zhin.setTimeout(() => {
-                bot.logger.info(`第${bot.reconnect_times}此重连`)
+                bot.logger.debug(`第${bot.reconnect_times}此重连`)
                 bot.stop = createWsHandler(bot, options)
             }, reconnect_interval)
         }
@@ -168,7 +170,7 @@ export function createWsReverseHandler(bot: OneBot, options: OneBot.Options<'ws_
     const wss: Set<WebSocket> = new Set<WebSocket>()
     socketServer.on('connection', (ws, req) => {
         wss.add(ws)
-        bot.logger.info(`已连接到协议端：(${getReqIp(req)})`)
+        bot.logger.debug(`已连接到协议端：(${getReqIp(req)})`)
         ws.on('message', (data) => {
             const event = JSON.parse(data.toString())
             if (event.echo) {
@@ -178,7 +180,7 @@ export function createWsReverseHandler(bot: OneBot, options: OneBot.Options<'ws_
             }
         })
         ws.on('connection', () => {
-            bot.emit('bot.online',bot.self_id)
+            bot.adapter.emit('bot.online',bot.self_id)
             bot.reconnect_times = 0
             bot.connect_status = 'connected';
         })
@@ -188,7 +190,7 @@ export function createWsReverseHandler(bot: OneBot, options: OneBot.Options<'ws_
         ws.on('close', (e) => {
             bot.logger.error(`与协议端(${getReqIp(req)})断开连接`)
             bot.connect_status = 'disconnected';
-            bot.emit('bot.offline',bot.self_id)
+            bot.adapter.emit('bot.offline',bot.self_id)
             wss.delete(ws)
         })
     })

@@ -121,7 +121,7 @@ export function send(ctx: Context) {
 export function recall(ctx: Context) {
     const {recall = 10} = Config(useOptions('plugins.common'))
     const recent: Record<string, string[]> = {}
-    ctx.on('message.send', ({message_id, to_id}) => {
+    ctx.on('message.send', (self_id,{message_id, to_id}) => {
         const list = recent[to_id] ||= []
         list.unshift(message_id)
         if (list.length > recall) {

@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-common",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.25",
+  "version": "0.0.26",
   "description": "common plugin",
   "repository": {
     "type": "git",

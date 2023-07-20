@@ -3,7 +3,7 @@ import {OneBotAdapter, OneBotEventMap} from "./";
 import {OneBotPayload, Types} from './types'
 import {createHttpHandler, createWebhookHandler, createWsHandler, createWsReverseHandler} from "./link";
 import {Logger} from "log4js";
-import {fromFragment, toElement,toString} from "./utils";
+import {fromFragment,toString} from "./utils";
 
 declare module 'zhin' {
     namespace Zhin {
