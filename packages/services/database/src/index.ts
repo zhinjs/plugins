@@ -72,7 +72,6 @@ export async function install(ctx: Context) {
     ctx.disposes.push(
         await ctx.zhin.beforeReady(async ()=>{
             ctx.database = ctx.service('database');
-            console.log('defined service database')
             await ctx.database.start()
         })
     )

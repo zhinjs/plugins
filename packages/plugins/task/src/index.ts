@@ -140,7 +140,6 @@ class Tasks {
                         const {Task, TaskStep} = this.ctx.database.models
                         Task.hasMany(TaskStep, {as: 'steps'})
                         TaskStep.belongsTo(Task)
-                        console.log('Task', Task)
                     })
                 )
 
