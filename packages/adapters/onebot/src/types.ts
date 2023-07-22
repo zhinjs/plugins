@@ -1,12 +1,21 @@
+import exp from "constants";
+
 export namespace Types {
     type SegmentMap={
         text:{
             text:string
         }
+        face:{
+            id:number
+            text?:string
+        }
         mention:{
             user_id:string
         }
         mention_all:never
+        flash:{
+            file_id:string
+        }
         image:{
             file_id:string
         }
@@ -15,6 +24,10 @@ export namespace Types {
         }
         audio:{
             file_id:string
+        }
+        music:{
+            id:string|number
+            platform:string
         }
         video:{
             file_id:string
@@ -32,6 +45,28 @@ export namespace Types {
             message_id:string
             user_id?:string
         }
+        xml:{
+            data:string
+            id?:string
+        }
+        poke:{
+            id:string
+        }
+        dice:{
+            id:number
+        }
+        rps:{
+            id:number
+        }
+        json:{
+            data:string
+        }
+        node:{
+            user_id:string
+            user_name?:string
+            time?:number
+            message:string|Types.Message
+        }
     }
 
     export interface Segment<T extends keyof SegmentMap=keyof SegmentMap>{
@@ -42,13 +77,23 @@ export namespace Types {
     export type MentionSegment=Segment<'mention'>
     export type MentionAllSegment=Segment<'mention_all'>
     export type ImageSegment=Segment<'image'>
+    export type DiceSegment=Segment<'dice'>
+    export type RpsSegment=Segment<'rps'>
+    export type PokeSegment=Segment<'poke'>
+    export type FaceSegment=Segment<'face'>
+    export type FlashSegment=Segment<'flash'>
     export type AudioSegment=Segment<'audio'>
     export type VideoSegment=Segment<'video'>
     export type VoiceSegment=Segment<'voice'>
+    export type MusicSegment=Segment<'music'>
     export type LocationSegment=Segment<'location'>
     export type ReplySegment=Segment<'reply'>
-    export type SingleMessage=AudioSegment|VideoSegment|VoiceSegment|LocationSegment|MentionAllSegment
-    export type CanComposeMessage=string|MentionSegment|TextSegment|ImageSegment
+    export type XmlSegment=Segment<'xml'>
+    export type JsonSegment=Segment<'json'>
+    export type NodeSegment=Segment<'node'>
+    export type SingleMessage=AudioSegment|VideoSegment|VoiceSegment|LocationSegment|MentionAllSegment|
+        DiceSegment|RpsSegment|PokeSegment|FlashSegment|XmlSegment|JsonSegment|NodeSegment|MusicSegment
+    export type CanComposeMessage=string|MentionSegment|TextSegment|ImageSegment|FaceSegment
     export type ReplyMessage=[ReplySegment,...CanComposeMessage[]]
     export type Message=SingleMessage|[SingleMessage]|ReplyMessage|CanComposeMessage|CanComposeMessage[]
     export interface GroupInfo {

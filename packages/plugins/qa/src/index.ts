@@ -8,17 +8,18 @@ export const name = 'qa'
 export const using = ['database']
 
 export async function install(ctx: Context) {
-
-    await ctx.beforeReady(async () => {
-        ctx.disposes.push(
-            await ctx.database.onCreated(() => {
-                ctx.database.define('QA', QA)
-            }),
-            await ctx.database.onReady(() => {
-                ctx.database.sequelize.sync({alter: {drop: true}})
-            })
-        )
-    })
+    ctx.disposes.push(
+        await ctx.beforeReady(async () => {
+            ctx.disposes.push(
+                await ctx.database.onCreated(() => {
+                    ctx.database.define('QA', QA)
+                    ctx.disposes.push(()=>{
+                        ctx.database.delete('QA')
+                    })
+                })
+            )
+        })
+    )
     ctx.plugin(teach)
     ctx.plugin(receiver)
 }

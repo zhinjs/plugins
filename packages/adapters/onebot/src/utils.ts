@@ -22,56 +22,156 @@ export function toElement<S>(message: Types.Message, ctx?: S): Element[] {
         return result
     }, [])
 }
-
-export function fromFragment(fragment: Element.Fragment): Types.Message {
-    const allowTypes=[
-        'text',
-        'image',
-        'face',
-        'record',
-        'video',
-        'audio',
-        'file',
-        'mention',
-        'mention_all',
-        'node',
-        'rps',
-        'dice',
-        'poke',
-    ]
-    if (typeof fragment !== 'object') return Element.unescape(String(fragment))
-    return [].concat(fragment).filter(Boolean).map((ele: Element | string) => {
-        if (typeof ele === 'string') return Element.unescape(ele)
-        if (['video', 'voice', 'audio', 'image'].includes(ele.type)) {
+export async function fromElement(elementList: Element[]): Promise<Types.Segment[]> {
+    const result=await  Element.transform<Types.Segment>(elementList, {
+        text({text}, children): Types.TextSegment {
+            if (text) return {type: 'text', data: {text}}
+            return {type: 'text', data: {text: text || children?.join('') || children}}
+        },
+        image({src, file_id, url}, children): Types.ImageSegment {
             return {
-                type: ele.type,
-                data: {file_id: ele.attrs?.src || ele.children.join(''), ...ele.attrs}
-            } as unknown as Types.Segment
-        } else if (ele.type === 'mention' && !ele.attrs.user_id) {
-            return {type: 'mention_all', data: ele.attrs} as unknown as Types.Segment
-        }else if(ele.type==='node'){
+                type: 'image',
+                data: {
+                    file_id: file_id || src || url || children?.join('') || children,
+                }
+            }
+        },
+        flash({src, file_id, url}, children): Types.FlashSegment {
             return {
-                type:'node',
-                data:{
-                    user_id:ele.attrs.user_id,
-                    nickname:ele.attrs.nickname,
-                    time:ele.attrs.time,
-                    message:fromFragment(ele.children||ele.attrs.message)
+                type: 'flash',
+                data: {
+                    file_id: file_id || src || url || children?.join('') || children,
+                }
+            }
+        },
+        mention({qq, user_id}, children): Types.MentionSegment {
+            return {
+                type: 'mention',
+                data: {
+                    user_id: user_id || qq || children?.join('') || children,
+                }
+            }
+        },
+        mention_all(): Types.MentionAllSegment {
+            return {
+                type: 'mention_all',
+                data: {} as never
+            }
+        },
+        audio({src, file_id, url}, children): Types.AudioSegment {
+            return {
+                type: 'audio',
+                data: {
+                    file_id: file_id || src || url || children?.join('') || children,
+                }
+            }
+        },
+        video({src, file_id, url}, children): Types.VideoSegment {
+            return {
+                type: 'video',
+                data: {
+                    file_id: file_id || src || url || children?.join('') || children,
+                }
+            }
+        },
+        music({id,platform}, children): Types.MusicSegment {
+            return {
+                type: 'music',
+                data: {
+                    id: id || children?.join('') || children,
+                    platform:platform||'163'
+                }
+            }
+        },
+        reply({message_id, user_id,id}, children): Types.ReplySegment {
+            return {
+                type: 'reply',
+                data: {
+                    message_id: id || message_id || children?.join('') || children,
+                    user_id:user_id
+                }
+            }
+        },
+        xml({data,id}, children): Types.XmlSegment {
+            return {
+                type: 'xml',
+                data: {
+                    data: data || children?.join('') || children,
+                    id
+                }
+            }
+        },
+        json({data}, children): Types.JsonSegment {
+            return {
+                type: 'json',
+                data: {
+                    data: data || children?.join('') || children,
+                }
+            }
+        },
+        location({lat,lon,latitude,longitude, title, content}, children): Types.LocationSegment {
+            return {
+                type: 'location',
+                data: {
+                    latitude: lat||latitude,
+                    longitude: lon||longitude,
+                    title: title,
+                    content: content || children?.join('') || children,
+                }
+            }
+        },
+        face({id,text}): Types.FaceSegment {
+            return {
+                type: 'face',
+                data: {
+                    id,
+                    text
+                }
+            }
+        },
+        dice({id}): Types.DiceSegment {
+            return {
+                type: 'dice',
+                data: {
+                    id,
+                }
+            }
+        },
+        rps({id}): Types.RpsSegment {
+            return {
+                type: 'rps',
+                data: {
+                    id,
+                }
+            }
+        },
+        poke({id}): Types.PokeSegment {
+            return {
+                type: 'poke',
+                data: {
+                    id,
+                }
+            }
+        },
+        node({qq,user_id,user_name,nickname,time,message},children):Types.NodeSegment{
+            return {
+                type: 'node',
+                data: {
+                    user_id:user_id||qq,
+                    user_name:user_name||nickname,
+                    time,
+                    message:message||children,
                 }
             }
         }
-        if(!allowTypes.includes(ele.type)) return {
+    })
+    return result.map(ele=>{
+        if(typeof ele==="string") return {
             type:'text',
             data:{
-                text:ele.source??ele.children?.toString()
+                text:ele
             }
         }
-        return {
-            type: ele.type,
-            data: {
-                ...ele.attrs,
-                text:Element.unescape(ele.attrs?.text||ele.children?.toString()||'')
-            }
-        } as unknown as Types.Segment
-    }) as Types.Message
+        return ele
+    })
 }

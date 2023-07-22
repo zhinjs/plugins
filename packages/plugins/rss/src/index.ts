@@ -18,14 +18,18 @@ export const Config = Schema.object({
     userAgent: Schema.string()
 })
 
-export function install(ctx: Context) {
+export async function install(ctx: Context) {
     const config = Config(useOptions('plugins.rss'))
-    if (ctx.database) {
-        ctx.database.define('Rss', Feed.table)
-    }
     ctx.disposes.push(
-        ctx.zhin.on('database-created', () => {
-            ctx.database.define('Rss', Feed.table)
+        await ctx.beforeReady(async () => {
+            ctx.disposes.push(
+                await ctx.database.onCreated(() => {
+                    ctx.database.define('Rss', Feed.table)
+                    ctx.disposes.push(() => {
+                        ctx.database.delete('Rss')
+                    })
+                })
+            )
         })
     )
     const {timeout, refresh, userAgent} = config || {timeout: 1000, refresh: 10 * 1000, userAgent: ''}

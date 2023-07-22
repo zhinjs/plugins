@@ -97,22 +97,7 @@ export function install(ctx: Context) {
 
 class Tasks {
     constructor(public ctx: Context) {
-        ctx.beforeReady(async () => {
-            ctx.disposes.push(
-                await ctx.database.onCreated(() => {
-                    ctx.database.define('Task', Task)
-                    ctx.database.define('TaskStep', TaskStep)
-                }),
-                await ctx.database.onMounted(() => {
-                    const {Task, TaskStep} = ctx.database.models
-                    Task.hasMany(TaskStep, {as: 'steps'})
-                    TaskStep.belongsTo(Task)
-                }), await ctx.database.onReady(() => {
-                    ctx.database.sequelize.sync({alter: {drop: false}})
-                })
-            )
-
-        })
+        this.init()
     }
 
     get taskModel() {
@@ -139,7 +124,29 @@ class Tasks {
         }
         return taskInstance.toJSON()
     }
+    async init(){
+        this.ctx.disposes.push(
+            await this.ctx.beforeReady(async () => {
+                this.ctx.disposes.push(
+                    await this.ctx.database.onCreated(() => {
+                    this.ctx.database.define('Task', Task)
+                    this.ctx.database.define('TaskStep', TaskStep)
+                    this.ctx.disposes.push(()=>{
+                        this.ctx.database.delete('Task')
+                        this.ctx.database.delete('TaskStep')
+                        })
+                    }),
+                    await this.ctx.database.onMounted(() => {
+                        const {Task, TaskStep} = this.ctx.database.models
+                        Task.hasMany(TaskStep, {as: 'steps'})
+                        TaskStep.belongsTo(Task)
+                        console.log('Task', Task)
+                    })
+                )
 
+            })
+        )
+    }
     query(condition: string | Partial<Task> = {}, pagination: Pagination = {pageNum: 1, pageSize: 15}) {
         if (typeof condition === 'string') condition = {name: condition}
         Object.keys(condition).forEach(key => {

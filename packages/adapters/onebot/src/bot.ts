@@ -1,9 +1,9 @@
-import {Zhin, Bot, BotOptions, Session, Element, NSession} from "zhin";
+import {Zhin, Bot, BotOptions, Session, Element, NSession } from "zhin";
 import {OneBotAdapter, OneBotEventMap} from "./";
 import {OneBotPayload, Types} from './types'
 import {createHttpHandler, createWebhookHandler, createWsHandler, createWsReverseHandler} from "./link";
 import {Logger} from "log4js";
-import {fromFragment,toString} from "./utils";
+import {fromElement,toString} from "./utils";
 
 declare module 'zhin' {
     namespace Zhin {
@@ -196,19 +196,19 @@ export class OneBot extends Bot<
 
     async sendMsg(target_id: string | number, target_type: Bot.MessageType, message: Element.Fragment): Promise<Bot.MessageRet> {
         const types = ['private', 'group', 'discuss']
-        if (!Array.isArray(message)) message = [message]
-        const sendMessage=fromFragment(message)
+        message=Element.toElementArray(message)
+        const sendMessage=await fromElement(message as Element[])
         const result = await this.runAction('send_message', {
             guild_id: types.includes(target_type) ? undefined : String(target_id),
             channel_id: types.includes(target_type) ? undefined : target_type,
             [target_type === 'private' ? 'user_id' : `${target_type}_id`]: types.includes(target_type) ? target_id : undefined,
-            message:sendMessage
+            message:sendMessage as Types.Message
         })
         const messageRet={
             message_id: result.message_id,
             from_id: this.self_id,
             to_id: target_id,
-            content: toString(sendMessage),
+            content: toString(sendMessage as Types.Message),
             type: target_type,
             user_id: this.self_id
         }

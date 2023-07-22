@@ -13,16 +13,18 @@ export const name = 'cron'
 
 export async function install(ctx: Context, config: Config = {}) {
     if (!config) config = {}
-    await ctx.beforeReady(async () => {
-        ctx.disposes.push(
-            await ctx.database.onCreated(() => {
-                ctx.database.define('cron', CronTable.model)
-            }),
-            await ctx.database.onReady(() => {
-                ctx.database.sequelize.sync({alter: {drop: false}})
-            })
-        )
-    })
+    ctx.disposes.push(
+        await ctx.beforeReady(async () => {
+            ctx.disposes.push(
+                await ctx.database.onCreated(() => {
+                    ctx.database.define('cron', CronTable.model)
+                    ctx.disposes.push(() => {
+                        ctx.database.delete('cron')
+                    })
+                })
+            )
+        })
+    )
 
     async function hasCron(id: number) {
         const data = await ctx.database.get('cron', {id})
@@ -53,7 +55,7 @@ export async function install(ctx: Context, config: Config = {}) {
 
         if (!interval) {
             if (date < now) {
-                await ctx.database.delete('cron', {id})
+                await ctx.database.destroy('cron', {id})
                 if (lastCall) await executeCron()
                 return
             }
@@ -61,7 +63,7 @@ export async function install(ctx: Context, config: Config = {}) {
             ctx.logger.debug('prepare %d: %s at %s', id, command, time)
             return ctx.setTimeout(async () => {
                 if (!await hasCron(id)) return
-                await ctx.database.delete('cron', {id})
+                await ctx.database.destroy('cron', {id})
                 await executeCron()
             }, date - now)
         }
@@ -100,7 +102,7 @@ export async function install(ctx: Context, config: Config = {}) {
         .option('-d [del:number]  删除已经设置的执行任务')
         .action<Session>(async ({session, options}, dateStr, command) => {
             if (options.del) {
-                await ctx.database.delete('cron', {id: options.del})
+                await ctx.database.destroy('cron', {id: options.del})
                 return `日程 ${options.del} 已删除。`
             }
 

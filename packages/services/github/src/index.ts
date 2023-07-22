@@ -15,7 +15,7 @@ declare module 'zhin' {
 }
 export const using = ['database']
 
-export function install(ctx: Context) {
+export async function install(ctx: Context) {
     ctx.middleware(async (session, next) => {
         await next()
         const mathReg = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/]+)\/?$/
@@ -190,7 +190,7 @@ export function install(ctx: Context) {
                     unsubscribe(name)
                     await Promise.all([
                         updateChannels(),
-                        ctx.database.delete('github', {name: [name]}),
+                        ctx.database.destroy('github', {name: [name]}),
                     ])
                     return '删除成功'
                 }
@@ -247,19 +247,21 @@ export function install(ctx: Context) {
 
             return request('PUT', `/user/starred/${options.repo}`, session, null, '操作')
         })
-    ctx.beforeReady(async ()=>{
-        await ctx.database.onReady(async ()=>{
-            const channels = await ctx.database.get('Group')
-            for (const channel of channels) {
-                const {github_webhooks, group_id} = channel.toJSON()
-                if (!github_webhooks) continue
-                for (const repo in github_webhooks) {
-                    subscribe(repo, group_id, github_webhooks[repo])
+    ctx.disposes.push(
+        await ctx.afterStart(async ()=>{
+            await ctx.database.onReady(async ()=>{
+                const channels = await ctx.database.get('Group')
+                for (const channel of channels) {
+                    const {github_webhooks, group_id} = channel.toJSON()
+                    if (!github_webhooks) continue
+                    for (const repo in github_webhooks) {
+                        subscribe(repo, group_id, github_webhooks[repo])
+                    }
                 }
-            }
-        })
+            })
 
-    })
+        })
+    )
     const reactions = ['+1', '-1', 'laugh', 'confused', 'heart', 'hooray', 'rocket', 'eyes']
 
     function safeParse(source: string) {

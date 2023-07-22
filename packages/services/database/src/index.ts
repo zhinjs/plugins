@@ -17,7 +17,6 @@ export namespace TableColumn {
         autoIncrement?: boolean;
         autoIncrementIdentity?: boolean;
         comment?: string;
-
         get?(): unknown
 
         set?(value: unknown): void
@@ -70,10 +69,13 @@ export const Config = Schema.object({
 export async function install(ctx: Context) {
     const options = Config(useOptions('services.database'))
     ctx.service('database', Database, options as Options)
-    ctx.disposes.push(await ctx.zhin.beforeReady(async ()=>{
-        ctx.database = ctx.service('database');
-        await ctx.database.start()
-    }))
+    ctx.disposes.push(
+        await ctx.zhin.beforeReady(async ()=>{
+            ctx.database = ctx.service('database');
+            console.log('defined service database')
+            await ctx.database.start()
+        })
+    )
     ctx.disposes.unshift(() => {
         ctx.database.disconnect()
     })
@@ -85,66 +87,112 @@ class Database {
     public isReady: boolean
 
     constructor(public ctx: Context, public options: Options) {
-        this.sequelize = new Sequelize({...options, logging: (text) => this.logger.debug(text)})
+        this.sequelize = new Sequelize({...options, logging: (text) => this.logger.trace(`[sequelize] ${text}`)})
         this.define('User', UserTable.model);
         this.define('Group', GroupTable.model);
     }
     async onCreated<T>(fn:()=>T|Promise<T>):Promise<ToDispose<Zhin>>{
         if(this.isReady){
+            this.ctx.zhin.logger.debug('【database hook:created】database is ready, run fn directly')
+            const existKeys=Object.keys(this.modelDecl)
             fn()
+            const addKeys=Object.keys(this.modelDecl).filter(key=>!existKeys.includes(key))
+
+            this.ctx.zhin.logger.debug(`【database hook:created】add ${addKeys.length} models:${addKeys.join(',')}`);
+            [...existKeys,...addKeys].forEach(key=>{
+                // 重新定义之前，把之前的模型删除
+                delete this.sequelize.models[key]
+                this.sequelize.define(key, this.modelDecl[key], {timestamps: false})
+            })
         }
-        return await this.ctx.zhin.on('database-created',fn)
+        this.ctx.zhin.logger.debug('【database hook:created】database maybe reload, add created listener')
+        return await this.ctx.on('database-created',fn)
     }
     async onMounted<T>(fn:()=>T|Promise<T>):Promise<ToDispose<Zhin>>{
         if(this.isReady){
+            this.ctx.zhin.logger.debug('【database hook:mounted】database is ready, run fn directly')
             fn()
+            this.ctx.zhin.logger.debug('【database hook:mounted】maybe add new model related, waiting sync...')
+            await this.sequelize.sync({alter: {drop: false}})
         }
-        return this.ctx.zhin.on('database-mounted',fn)
+        this.ctx.zhin.logger.debug('【database hook:mounted】database maybe reload, add mount listener')
+        return this.ctx.on('database-mounted',fn)
     }
     async onReady<T>(fn:()=>T|Promise<T>):Promise<ToDispose<Zhin>>{
         if(this.isReady){
+            this.ctx.zhin.logger.debug('【database hook:ready】database is ready, run fn directly')
             fn()
         }
-        return this.ctx.zhin.on('database-ready',fn)
+        this.ctx.zhin.logger.debug('【database hook:ready】database maybe reload, add ready listener')
+        return this.ctx.on('database-ready',fn)
     }
     async start() {
-        await this.ctx.zhin.emitSync('database-created')
+        await this.ctx.emitSync('database-created')
         Object.entries(this.modelDecl).forEach(([name, decl]) => {
             this.sequelize.define(name, decl, {timestamps: false})
         })
-        await this.ctx.zhin.emitSync('database-mounted')
+        await this.ctx.emitSync('database-mounted')
         // 这儿可以定义表关系
-        await this.sequelize.sync({alter: true})
-        await this.ctx.zhin.emitSync('database-ready')
+        await this.sequelize.sync({alter: {drop: false}})
+        await this.ctx.emitSync('database-ready')
         this.isReady = true
-        this.connect()
+        this.connect();
     }
     async restart(){
         await this.disconnect()
         await this.start()
 
     }
+
+    /**
+     * 获取所有表模型
+     */
     get models(): Record<string, ModelStatic<Model>> {
         return this.sequelize.models
     }
 
+    /**
+     * 获取指定表模型
+     * @param name {string} 表名
+     */
     model(name: string): ModelStatic<Model> {
         return this.models[name]
     }
 
+    /**
+     * 获取表数据
+     * @param modelName {string} 表名
+     * @param condition {Dict} 条件
+     */
     get(modelName: string, condition?: Dict) {
         return this.model(modelName).findAll({where: condition})
     }
 
+    /**
+     * 更新表数据
+     * @param modelName {string} 表名
+     * @param condition {Dict} 条件
+     * @param value {Dict} 更新的值
+     */
     set(modelName: string, condition: Dict, value: Dict) {
         return this.model(modelName).update(value, {where: condition})
     }
 
+    /**
+     * 添加表中数据
+     * @param modelName {string} 表名
+     * @param values {Dict[]} 数据
+     */
     add(modelName: string, ...values: Dict[]) {
         return this.model(modelName).bulkCreate(values)
     }
 
-    delete(modelName: string, condition: Dict) {
+    /**
+     * 删除表中的数据
+     * @param modelName {string} 表名
+     * @param condition {Dict} 条件
+     */
+    destroy(modelName: string, condition: Dict) {
         return this.model(modelName).destroy({where: condition})
     }
 
@@ -205,6 +253,11 @@ class Database {
         return this.ctx.logger
     }
 
+    /**
+     * 扩展表模型定义
+     * @param name {string} 表名
+     * @param decl
+     */
     extend(name: string, decl: TableDecl) {
         const _decl: TableDecl = this.modelDecl[name]
         if (!decl) return this.define(name, decl)
@@ -212,6 +265,20 @@ class Database {
         return this
     }
 
+    /**
+     * 删除表模型定义
+     * @param name {string} 表名
+     */
+    delete(name: string) {
+        delete this.modelDecl[name]
+        return this
+    }
+
+    /**
+     * 定义表模型
+     * @param name {string} 表名
+     * @param decl {TableDecl} 表模型定义
+     */
     define(name: string, decl: TableDecl) {
         if (this.modelDecl[name]) return this.extend(name, decl)
         this.modelDecl[name] = decl

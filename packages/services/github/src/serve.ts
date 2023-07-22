@@ -51,36 +51,38 @@ export class GitHub {
 
     constructor(public ctx: Context, public config: Config) {
         this.http = ctx.request.extend({})
-        ctx.beforeReady(async () => {
-            ctx.disposes.push(
-                await ctx.database.onCreated(() => {
-                    this.init()
-                }),
-                await ctx.database.onReady(() => {
-                    ctx.database.sequelize.sync({alter: {drop: false}})
-                })
-            )
-        })
+        this.init()
     }
 
-    init() {
-        this.ctx.database.extend('User', {
-            github_accessToken: DataTypes.STRING,
-            github_refreshToken: DataTypes.STRING
-        })
-        this.ctx.database.extend('Group', {
-            github_webhooks: {
-                type: DataTypes.TEXT,
-                get(): Dict<EventConfig> {
-                    return JSON.parse(this.getDataValue('github_webhooks') || '{}')
-                },
-                set(value: Dict<EventConfig>) {
-                    this.setDataValue('github_webhooks', JSON.stringify(value))
-                }
-            }
+    async init() {
+        this.ctx.disposes.push(
+            await this.ctx.zhin.beforeReady(async () => {
+                this.ctx.disposes.push(
+                    await this.ctx.database.onCreated(() => {
+                        this.ctx.database.extend('User', {
+                            github_accessToken: DataTypes.STRING,
+                            github_refreshToken: DataTypes.STRING
+                        })
+                        this.ctx.database.extend('Group', {
+                            github_webhooks: {
+                                type: DataTypes.TEXT,
+                                get(): Dict<EventConfig> {
+                                    return JSON.parse(this.getDataValue('github_webhooks') || '{}')
+                                },
+                                set(value: Dict<EventConfig>) {
+                                    this.setDataValue('github_webhooks', JSON.stringify(value))
+                                }
+                            }
 
-        })
-        this.ctx.database.define('github', GithubTable.model)
+                        })
+                        this.ctx.database.define('github', GithubTable.model)
+                        this.ctx.disposes.push(() => {
+                            this.ctx.database.delete('github')
+                        })
+                    })
+                )
+            })
+        )
     }
 
     async getTokens(params: any) {
