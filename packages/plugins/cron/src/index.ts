@@ -1,7 +1,7 @@
 import {formatContext, isSameEnv} from "./utils";
 import {CronTable} from "./models";
 import '@zhinjs/plugin-database'
-import {Context, Session, Element, Time, Zhin} from "zhin";
+import {Context, Session, Element, Time, Zhin, h} from "zhin";
 
 export const using = ['database'] as const
 
@@ -84,14 +84,16 @@ export async function install(ctx: Context, config: Config = {}) {
         }, timeout)
     }
 
-    ctx.on('after-ready', async () => {
-        const crons = await ctx.database.get('cron', {})
-        crons.forEach((cron) => {
-            const schedule = cron.toJSON()
-            const {session, assignee} = schedule
-            prepareCron(schedule, assignee, session)
+    ctx.disposes.push(
+        await ctx.afterStart(async () => {
+            const crons = await ctx.database.get('cron', {})
+            crons.forEach((cron) => {
+                const schedule = cron.toJSON()
+                const {session, assignee} = schedule
+                prepareCron(schedule, assignee, session)
+            })
         })
-    })
+    )
 
     ctx.command('cron [time:string] [command:text]')
         .desc('定义定时执行指令')
@@ -112,12 +114,14 @@ export async function install(ctx: Context, config: Config = {}) {
                     schedules = schedules.filter((s) => isSameEnv(s.session, session))
                 }
                 if (!schedules.length) return '当前没有等待执行的日程。'
-                return schedules.map(({id, time, interval, command, session}) => {
-                    // 输出结果编码下，避免执行
-                    let output = `${id}. ${Time.formatTimeInterval(time, interval)}：${Element.escape(command)}`
-                    if (options.full) output += `，上下文：${formatContext(session)}`
-                    return output
-                }).join('\n')
+                return h('text',{
+                    text:schedules.map(({id, time, interval, command, session}) => {
+                        // 输出结果编码下，避免执行
+                        let output = `${id}. ${Time.formatTimeInterval(time, interval)}：${command}`
+                        if (options.full) output += `，上下文：${formatContext(session)}`
+                        return output
+                    }).join('\n')
+                })
             }
 
             if (!command) return '请输入要执行的指令。'

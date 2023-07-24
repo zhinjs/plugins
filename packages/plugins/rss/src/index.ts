@@ -69,13 +69,13 @@ export async function install(ctx: Context) {
     feeder.on('error', (err: Error) => {
         ctx.logger.debug(err.message)
     })
-    ctx.once('start', async () => {
+    ctx.disposes.push(await ctx.afterStart(async()=>{
         const rssList = await ctx.database.get('Rss')
         for (const rss of rssList) {
             const rssInfo = rss.toJSON()
             subscribe(rssInfo.url, `${rssInfo.target_type}:${rssInfo.target_id}` as ChannelId, rssInfo.callback)
         }
-    })
+    }))
     const validators: Record<string, Promise<unknown>> = {}
 
     async function validate(url: string, session: NSession<keyof Zhin.Adapters>) {
