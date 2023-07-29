@@ -26,7 +26,7 @@ export interface Pagination {
     pageNum: number
 }
 
-export const using = ['database']
+export const use = ['database']
 
 export function install(ctx: Context) {
     const taskService = new Tasks(ctx)

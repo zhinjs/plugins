@@ -2,7 +2,7 @@
   "name": "@zhinjs/plugin-console",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "console service",
   "repository": {
     "type": "git",
@@ -15,9 +15,7 @@
     "zhin"
   ],
   "files": [
-    "lib/**/*.js",
-    "lib/**/*.d.ts",
-    "lib/**/LICENSE"
+    "lib"
   ],
   "author": "凉菜 <admin@liucl.cn>",
   "license": "MIT",

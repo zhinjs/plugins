@@ -13,9 +13,9 @@ export const QA={
         get(){
             const str=this.getDataValue('belongs')||''
             if(!str) return []
-            return str.split(',').map(str=>{
-                const [type,target]=str.split(':')
-                return {type,target}
+            return str.split(',').filter(Boolean).map(str=>{
+                const [type,...rest]=str.split(':').filter(Boolean)
+                return {type,target:rest.join(':')}
             })
         },
         set(data:{type,target}[]){
@@ -23,7 +23,8 @@ export const QA={
             this.setDataValue('belongs',belongs)
         }
     },
-    creator:DataTypes.TEXT,
+    who:DataTypes.STRING,
+    where:DataTypes.STRING,
     useTimes:{
         type:DataTypes.INTEGER,
         defaultValue: 0
@@ -37,4 +38,7 @@ export interface QA{
     probability:number
     redirect:string
     belongs: { type:string,target:string }[]
+    who:string
+    where:string
+    useTimes:number
 }

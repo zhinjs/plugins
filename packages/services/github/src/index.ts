@@ -13,7 +13,7 @@ declare module 'zhin' {
         }
     }
 }
-export const using = ['database']
+export const use = ['database']
 
 export async function install(ctx: Context) {
     ctx.middleware(async (session, next) => {

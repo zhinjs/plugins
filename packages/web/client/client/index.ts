@@ -218,7 +218,6 @@ const initTask = new Promise<void>((resolve) => {
             extensions[path].dispose()
             delete extensions[path]
         }
-
         await Promise.all(newValue.map((path) => {
             return loadExtension(path).catch(console.error)
         }))

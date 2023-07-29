@@ -2,7 +2,7 @@ import { build, BuildFailure, BuildOptions, Message, Platform, Plugin } from 'es
 import { resolve } from 'path'
 import { cyan, red, yellow } from 'kleur'
 import { existsSync, readdir } from 'fs-extra'
-import { getPackages, PackageJson, requireSafe } from './utils'
+import {getPackages, PackageJson, requireSafe, spawnAsync} from './utils'
 import cac from 'cac'
 
 const { args } = cac().help().parse()
@@ -48,6 +48,9 @@ async function compile(name: string) {
 
 
     const base = root + name
+    if(meta.scripts?.build) {
+        await spawnAsync(['npm', 'run', 'build'], { cwd: base })
+    }
     const entryPoints = [base + '/src/index.ts']
     const filter = /^[@/\w-]+$/
     const externalPlugin: Plugin = {

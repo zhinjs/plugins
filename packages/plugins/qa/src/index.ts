@@ -5,7 +5,7 @@ import * as teach from './teach'
 import * as receiver from './receiver'
 
 export const name = 'qa'
-export const using = ['database']
+export const use = ['database']
 
 export async function install(ctx: Context) {
     ctx.disposes.push(

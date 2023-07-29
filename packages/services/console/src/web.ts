@@ -14,14 +14,16 @@ class WebService extends DataService<string[]> {
 
     constructor(public plugin:Plugin,ctx: Context, private config: Console.Config) {
         super(ctx, 'web')
-        this.root=config.root?config.root: resolve(dirname(require.resolve('@zhinjs/client/package.json')), 'app')
+        this.root=config.root?config.root: ctx.zhin.isDev ?
+            resolve(dirname(require.resolve('@zhinjs/client/package.json')), 'app'):
+            resolve(__dirname,'../dist')
         this.start()
     }
 
     async start() {
         if(this.isStarted)return
         if (!this.root) return
-        await this.createVite()
+        if(this.ctx.zhin.isDev) await this.createVite()
         this.serveAssets()
         if (this.config.open) {
             const { port=8086 } = this.ctx.zhin.options['http']||{}
@@ -46,7 +48,7 @@ class WebService extends DataService<string[]> {
         const filenames: string[] = []
         for (const key in this.entries) {
             const local = this.entries[key]
-            const filename = '/vite/@fs/' + local
+            const filename = this.ctx.zhin.isDev?'/vite/@fs/' + local: this.config.uiPath + '/' + key
             if (extname(local)) {
                 filenames.push(filename)
             } else {
@@ -76,8 +78,8 @@ class WebService extends DataService<string[]> {
                 return ctx.body = createReadStream(filename)
             }
             if (name.startsWith('extension-')) {
-                const key = name.slice(0, 18)
-                if (this.entries[key]) return sendFile(this.entries[key][0] + name.slice(18))
+                const key = name.slice(0, 20)
+                if (this.entries[key]) return sendFile(this.entries[key] + name.slice(20))
             }
             const filename = resolve(this.root, name)
             if (!filename.startsWith(this.root) && !filename.includes('node_modules')) {

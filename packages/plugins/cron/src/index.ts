@@ -3,7 +3,7 @@ import {CronTable} from "./models";
 import '@zhinjs/plugin-database'
 import {Context, Session, Element, Time, Zhin, h} from "zhin";
 
-export const using = ['database'] as const
+export const use = ['database'] as const
 
 export interface Config {
     minInterval?: number

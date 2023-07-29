@@ -4,7 +4,7 @@ import {Meta} from 'feedparser'
 import {Feed} from "./models";
 
 export const name = 'rss'
-export const using = ['database'] as const
+export const use = ['database'] as const
 
 export interface Config {
     timeout?: number

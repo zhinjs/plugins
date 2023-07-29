@@ -7,7 +7,10 @@ export const DialogueCnMap = {
     answer: '回答',
     isReg: '是否正则',
     question: '问题',
-    probability: '触发概率权重(相同问题多个回答时，计算触发概率)',
+    probability: '权重',
+    useTimes: '使用次数',
+    who: '作者',
+    where: '来源',
     belongs: '触发条件',
     redirect: '重定向到',
     group: '群',
@@ -18,7 +21,7 @@ export const DialogueCnMap = {
 function transformDialogueValue(key, value) {
     if (key === 'belongs') {
         if (!value.length) return '所有消息均可触发'
-        return value.map(item => `触发方式:${transformDialogueKey(item.type)}消息,指定${transformDialogueKey(item.type)}:${item.target}`).join('\n')
+        return value.map(item => `${transformDialogueKey(item.type)}消息,指定${transformDialogueKey(item.type)}:${item.target}`).join('\n')
     }
     return value
 }
@@ -50,7 +53,7 @@ template.set('teach', {
 {2}`,
     '404': `{0}({1})未找到任何有关问答`
 })
-export const using=['database']
+export const use=['database']
 export function install(ctx: Context) {
     ctx.command('qa [question:string] [answer:text]')
         .desc('问答管理')
@@ -61,7 +64,7 @@ export function install(ctx: Context) {
         .option('-x [regexp:regexp] 是否为正则匹配')
         .option( '-> [redirect:string] 重定向到指定问题')
         .option( '-p [probability:number] 触发概率')
-        .option('-t [trigger:string] 触发环境')
+        .option('-t [trigger:string] 触发环境，默认(master/admins:【*】 owner/admin:【group:group_id】 member:【group:group_id:user_id】friend:【private:user_id】)')
         .option('-P [page:number] 页码')
         .sugar(/^## (\S+)$/, {options: {search: '$1'}})
         .option('-e [edit:boolean] 是否为编辑')
@@ -71,22 +74,56 @@ export function install(ctx: Context) {
             if (Object.keys(options).filter(key => ['list', 'detail', 'search', 'edit', 'remove'].includes(key)).length > 1) {
                 return '查询/列表/详情、编辑/删除只能同时调用一个'
             }
+
+            let trigger=options.trigger||(session.isMaster?'*':
+                session.isOwner||session.isAdmin?`group:${session.group_id}`:[
+                    session.detail_type,
+                    session.guild_id,
+                    session.channel_id,
+                    session.group_id,
+                    session.user_id
+                ].filter(item => !!item).join(':'))
+            if(!trigger){
+                trigger=[
+                    session.isMaster?'*':session.detail_type,
+                    session.guild_id||session.group_id||session.discuss_id,
+                    session.channel_id,
+                    session.isOwner||session.isAdmin?'*':session.user_id
+                ].filter(Boolean).join(':')
+            } else if ((/^\*$/.test(trigger) && !session.isMaster) || // 不是管理员却想看全局
+                (/group/.test(trigger) && !session.isOwner && !session.isAdmin) // 不是群主或管理员却想看群组
+            ) {
+                trigger=[
+                    session.detail_type,
+                    session.guild_id||session.group_id||session.discuss_id,
+                    session.channel_id,
+                    session.user_id
+                ].filter(item => !!item).join(':')
+            }
+            const tmpArr = trigger.split(',').filter(Boolean).map(str => {
+                const [type, group_id,channel_id,user_id] = str.split(':')
+                return {
+                    type,
+                    guild_id: type==='guild'?group_id||'*':undefined,
+                    channel_id: type==='guild'?channel_id||'*':undefined,
+                    group_id: type==='group'?group_id||'*':undefined,
+                    user_id: type==='private'?group_id:type==='group'||'*'?channel_id||'*':type==='guild'?user_id||'*':'*'
+                }
+            }).filter(tmp => !!tmp.type)
             function filterResult(list) {
                 const result=list.map(teach => teach.toJSON())
                     .filter((dialogue: Dialogue) => {
-                        let trigger=options.trigger
-                        if (trigger === undefined) {
-                            trigger=`${session.detail_type}:${session['group_id']||session['discuss_id']||session.user_id}`
-                        }
-                        const tmpArr = trigger.split(',').map(str => {
-                            const [t1, t2] = str.split(':')
-                            return {
-                                type: t1,
-                                target: t2 ? t2 : '*'
-                            }
-                        }).filter(tmp => !!tmp.type)
                         return dialogue.belongs.length===0 || dialogue.belongs.some(belong => {
-                            return tmpArr.some(tmp => tmp.type === belong.type && (belong.target==='*' ||belong.target.includes(tmp.target)))
+                            if(belong.type==='*') return true
+                            let [guild_id,channel_id,group_id=guild_id,user_id=channel_id]=belong.target.split(':')
+                            if(belong.type==='private') user_id=guild_id
+                            return tmpArr.some(tmp =>{
+                                if(belong.type==='*' || tmp.type==='*') return true
+                                if(belong.type !== tmp.type) return false
+                                if(belong.type==='guild') return guild_id==='*' || guild_id===tmp.guild_id && (channel_id==='*' || channel_id===tmp.channel_id)
+                                if(belong.type==='group') return group_id==='*' || group_id===tmp.group_id && (user_id==='*' || user_id===tmp.user_id)
+                                if(belong.type==='private') return user_id==='*' || user_id===tmp.user_id
+                            })
                         })
                     })
                     .map((dialogue, idx) => `${idx + 1}. ID:${dialogue.id} 问题:${dialogue.question} 回答:${dialogue.answer} 是否正则:${dialogue.isReg ? '是' : '否'}${dialogue.redirect ? ` 重定向到:${dialogue.redirect}` : ''}`)
@@ -127,7 +164,6 @@ export function install(ctx: Context) {
             }
             if (options.info) {
                 const teach = await ctx.database.models.QA.findOne({
-                    attributes: ['id', 'question', 'answer', 'isReg', 'redirect', 'probability', 'belongs'],
                     where: {
                         id: options.info
                     }
@@ -150,23 +186,29 @@ export function install(ctx: Context) {
             }
             if (q) {
                 const data: Dialogue = {
-                    isReg: !!options.regexp
+                    isReg: !!options.regexp,
+                    who: String(session.user_id),
+                    belongs: tmpArr.some(tmp => tmp.type==='*')?[]:tmpArr.map(tmp => {
+                        return {
+                            type: tmp.type,
+                            target: [
+                                tmp.guild_id,
+                                tmp.channel_id,
+                                tmp.group_id,
+                                tmp.user_id
+                            ].filter(Boolean).join(':'),
+                        }
+                    }),
+                    where:[
+                        transformDialogueKey(session.detail_type),
+                        session.group_id||session.discuss_id||session.channel_id
+                    ].filter(v=>!!v).join(':'),
                 }
                 if (a) {
-                    console.log('answer',a)
                     data.answer = a
                 }
                 if (options.probability) {
                     data.probability = options.probability
-                }
-                if (options.trigger !== undefined) {
-                    data.belongs = options.trigger.split(',').map(trigger => {
-                        const [type, target] = trigger.split(':')
-                        return {
-                            type,
-                            target: target ? target : '*'
-                        }
-                    }).filter(belong => !!belong.type)
                 }
                 if (options.redirect) {
                     data.redirect = options.redirect

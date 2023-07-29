@@ -47,27 +47,24 @@ function setAuthUser(handle: SocketHandle, value: UserAuth) {
 }
 
 export class AuthService extends DataService<UserAuth> {
-    static using = ['console', 'database'] as const
+    static use = ['console', 'database'] as const
 
     constructor(ctx:Context, private config: AuthService.Config) {
         super(ctx, 'user')
-        if(ctx.database){
-            ctx.database.extend('User', {
-                password: DataTypes.STRING,
-                token: DataTypes.TEXT,
-                expire: DataTypes.BIGINT,
-            })
-        }
-        ctx.disposes.push(ctx.zhin.on('database-created',()=>{
-            ctx.database.extend('User', {
-                password: DataTypes.STRING,
-                token: DataTypes.TEXT,
-                expire: DataTypes.BIGINT,
-            })
-        }))
+        this.init()
         this.initLogin()
     }
-
+    async init(){
+        this.ctx.disposes.push(await this.ctx.zhin.beforeReady(async ()=>{
+            this.ctx.disposes.push(await this.ctx.database.onCreated(()=>{
+                this.ctx.database.extend('User', {
+                    password: DataTypes.STRING,
+                    token: DataTypes.TEXT,
+                    expire: DataTypes.BIGINT,
+                })
+            }))
+        }))
+    }
     initLogin() {
         const { ctx, config={loginTokenExpire:Time.minute*10,authTokenExpire:Time.week}}  = this
         const states: Record<string, [string, number, SocketHandle]> = {}
@@ -121,7 +118,7 @@ export class AuthService extends DataService<UserAuth> {
                 if (!user.expire || user.expire < Date.now()) {
                     user.token = v4()
                     user.expire = Date.now() + config.authTokenExpire
-                    await ctx.database.model("User").update({token:user.token,expire:user.expire},{where:{user_id:user.user_id}})
+                    await ctx.database.model("User").update({token:user.token,expire:user.expire},{where:{user_id:session.user_id}})
                 }
                 return setAuthUser(state[2], omit(user,['password']))
             }

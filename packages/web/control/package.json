@@ -2,12 +2,15 @@
   "name": "@zhinjs/plugin-control",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.10",
+  "version": "0.0.13",
   "description": "知音web管理插件",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
     "directory": "plugins/control"
+  },
+  "scripts": {
+    "build": "zhin-client build"
   },
   "keywords": [
     "control",
@@ -15,9 +18,8 @@
     "zhin"
   ],
   "files": [
-    "lib/**/*.js",
-    "lib/**/*.d.ts",
-    "lib/**/LICENSE",
+    "lib",
+    "dist",
     "client"
   ],
   "author": "凉菜 <admin@liucl.cn>",
