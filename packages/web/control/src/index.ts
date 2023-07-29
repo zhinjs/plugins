@@ -11,7 +11,10 @@ export const Config=Schema.object({
 })
 export function install(ctx:Context){
     const config=Config(useOptions('services.consoleAuth'))
-    ctx.console.addEntry(resolve(__dirname,ctx.zhin.isDev?'../client/index.ts':'../dist'))
+    ctx.console.addEntry({
+        dev:resolve(__dirname,'../client/index.ts'),
+        prod:resolve(__dirname,'../dist')
+    })
     ctx.service('console.user',new AuthService(ctx,config))
     ctx.service('console.config',new ConfigService(ctx))
 }

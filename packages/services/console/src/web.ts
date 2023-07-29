@@ -1,43 +1,47 @@
 import {Plugin, Dict, Context, noop} from 'zhin'
-import { dirname, extname, resolve } from 'path'
-import { createReadStream, existsSync, promises as fsp } from 'fs'
+import {dirname, extname, resolve} from 'path'
+import {createReadStream, existsSync, promises as fsp} from 'fs'
 import {createServer} from "vite";
-import { DataService } from './service'
+import {DataService} from './service'
 import {Console} from "./index";
-import { ViteDevServer } from 'vite'
+import {ViteDevServer} from 'vite'
 
 class WebService extends DataService<string[]> {
     private vite: ViteDevServer
-    private entries: Dict<string> = {}
-    root:string
-    private isStarted:boolean=false
+    private entries: Dict<WebService.Entry> = {}
+    root: string
+    private isStarted: boolean = false
 
-    constructor(public plugin:Plugin,ctx: Context, private config: Console.Config) {
+    constructor(public plugin: Plugin, ctx: Context, private config: Console.Config) {
         super(ctx, 'web')
-        this.root=config.root?config.root: ctx.zhin.isDev ?
-            resolve(dirname(require.resolve('@zhinjs/client/package.json')), 'app'):
-            resolve(__dirname,'../dist')
+        this.root = config.root ? config.root : ctx.zhin.isDev ?
+            resolve(dirname(require.resolve('@zhinjs/client/package.json')), 'app') :
+            resolve(__dirname, '../dist')
         this.start()
     }
 
     async start() {
-        if(this.isStarted)return
+        if (this.isStarted) return
         if (!this.root) return
-        if(this.ctx.zhin.isDev) await this.createVite()
+        if (this.ctx.zhin.isDev) await this.createVite()
         this.serveAssets()
         if (this.config.open) {
-            const { port=8086 } = this.ctx.zhin.options['http']||{}
+            const {port = 8086} = this.ctx.zhin.options['http'] || {}
             open(`http://localhost:${port}${this.config.uiPath}`)
         }
-        this.isStarted=true
+        this.isStarted = true
     }
 
 
-    addEntry(entry: string) {
+    addEntry(entry: string | WebService.Entry) {
         const key = 'extension-' + Math.random().toFixed(8)
+        if (typeof entry === 'string') entry = {
+            dev: entry,
+            prod: entry
+        }
         this.entries[key] = entry
         this.refresh()
-        this.plugin.context.disposes.push(()=>{
+        this.plugin.context.disposes.push(() => {
             delete this.entries[key]
             this.refresh()
             return true
@@ -47,8 +51,8 @@ class WebService extends DataService<string[]> {
     get() {
         const filenames: string[] = []
         for (const key in this.entries) {
-            const local = this.entries[key]
-            const filename = this.ctx.zhin.isDev?'/vite/@fs/' + local: this.config.uiPath + '/' + key
+            const local = this.ctx.zhin.isDev ? this.entries[key].dev : this.entries[key].prod
+            const filename = this.ctx.zhin.isDev ? '/vite/@fs/' + local : this.config.uiPath + '/' + key
             if (extname(local)) {
                 filenames.push(filename)
             } else {
@@ -62,7 +66,7 @@ class WebService extends DataService<string[]> {
     }
 
     private serveAssets() {
-        const { uiPath } = this.config
+        const {uiPath} = this.config
 
         this.ctx.router.get(uiPath + '(/.+)*', async (ctx, next) => {
             await next()
@@ -79,7 +83,9 @@ class WebService extends DataService<string[]> {
             }
             if (name.startsWith('extension-')) {
                 const key = name.slice(0, 20)
-                if (this.entries[key]) return sendFile(this.entries[key] + name.slice(20))
+                if (this.entries[key]) return sendFile((this.ctx.zhin.isDev ?
+                    this.entries[key].dev :
+                    this.entries[key].prod) + name.slice(20))
             }
             const filename = resolve(this.root, name)
             if (!filename.startsWith(this.root) && !filename.includes('node_modules')) {
@@ -96,7 +102,7 @@ class WebService extends DataService<string[]> {
     }
 
     private async transformHtml(template: string) {
-        const { uiPath } = this.config
+        const {uiPath} = this.config
         if (this.vite) {
             template = await this.vite.transformIndexHtml(uiPath, template)
         } else {
@@ -107,9 +113,9 @@ class WebService extends DataService<string[]> {
     }
 
     private async createVite() {
-        const { cacheDir } = this.config
-        const { createServer } = require('vite') as typeof import('vite')
-        const { default: vue } = require('@vitejs/plugin-vue') as typeof import('@vitejs/plugin-vue')
+        const {cacheDir} = this.config
+        const {createServer} = require('vite') as typeof import('vite')
+        const {default: vue} = require('@vitejs/plugin-vue') as typeof import('@vitejs/plugin-vue')
         this.vite = await createServer({
             root: this.root,
             base: '/vite/',
@@ -160,6 +166,11 @@ namespace WebService {
         root?: string
         uiPath?: string
         open?: boolean
+    }
+
+    export interface Entry {
+        dev: string
+        prod: string
     }
 }
 

@@ -47,7 +47,7 @@ export class Console {
         })
     }
 
-    addEntry(filename: string) {
+    addEntry(filename: string|WebService.Entry) {
         this.web.addEntry(filename)
     }
 
