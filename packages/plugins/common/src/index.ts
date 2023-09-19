@@ -1,4 +1,4 @@
-import {h, NSession, Context, Zhin, Schema, useOptions, Session} from "zhin";
+import {h, NSession, Context, Zhin, Schema, Session} from "zhin";
 import * as fs from 'fs'
 import * as music from './music'
 
@@ -13,12 +13,6 @@ export interface BasicConfig extends RecallConfig {
 }
 
 export const name = 'common'
-export const Config = Schema.object({
-    recall: Schema.number().description('撤回消息缓冲条数').default(10),
-    echo: Schema.boolean().description('是否启用echo插件'),
-    send: Schema.boolean().description('是否启用send插件'),
-    feedback: Schema.union([Schema.number(), Schema.array(Schema.number())]).description('接收反馈消息的用户ID'),
-})
 
 export interface Config extends BasicConfig {
 }
@@ -119,7 +113,12 @@ export function send(ctx: Context) {
 }
 
 export function recall(ctx: Context) {
-    const {recall = 10} = Config(useOptions('plugins.common'))
+    const {recall = 10} =ctx.useOptions('plugins.common',Schema.object({
+        recall: Schema.number().description('撤回消息缓冲条数').default(10),
+        echo: Schema.boolean().description('是否启用echo插件'),
+        send: Schema.boolean().description('是否启用send插件'),
+        feedback: Schema.union([Schema.number(), Schema.array(Schema.number())]).description('接收反馈消息的用户ID'),
+    }))
     const recent: Record<string, string[]> = {}
     ctx.on('message.send', (self_id,{message_id, to_id}) => {
         const list = recent[to_id] ||= []
@@ -148,7 +147,12 @@ export function recall(ctx: Context) {
 }
 
 export function feedback(ctx: Context) {
-    let {feedback = []} = Config(useOptions('plugins.common'))
+    let {feedback = []} = ctx.useOptions('plugins.common',Schema.object({
+        recall: Schema.number().description('撤回消息缓冲条数').default(10),
+        echo: Schema.boolean().description('是否启用echo插件'),
+        send: Schema.boolean().description('是否启用send插件'),
+        feedback: Schema.union([Schema.number(), Schema.array(Schema.number())]).description('接收反馈消息的用户ID'),
+    }))
     let operators = [].concat(feedback)
 
     async function createReplyCallback(ctx: Context, session1: NSession<keyof Zhin.Bots>, message_id, user_id: number) {

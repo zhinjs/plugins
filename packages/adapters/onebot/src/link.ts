@@ -133,6 +133,7 @@ export function createWsHandler(bot: OneBot, options: OneBot.Options<'ws'>) {
         }
     })
     socket.on('message', (data) => {
+        bot.adapter.logger.debug('收到消息：', data.toString())
         const event = JSON.parse(data.toString())
         if (event) {
             if (event.echo) {

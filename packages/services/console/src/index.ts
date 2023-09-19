@@ -1,4 +1,4 @@
-import {Context, Plugin, Schema, useOptions} from 'zhin'
+import {Context, Plugin, Schema} from 'zhin'
 import WebService from './web'
 import WsService from './ws'
 import { DataService } from './service'
@@ -31,7 +31,7 @@ export interface Console extends Console.Services {}
 export class Console {
     public global = {} as ClientConfig
     constructor(public plugin:Plugin,public ctx: Context, public config: Console.Config) {
-        const { devMode, uiPath, apiPath, selfUrl } = config
+        const { devMode, uiPath='', apiPath='', selfUrl='http://localhost:'+this.ctx.zhin.options.port } = config
         this.global.devMode = devMode
         this.global.uiPath = uiPath
         this.global.endpoint = selfUrl + apiPath
@@ -73,17 +73,20 @@ export namespace Console {
         ws?: WsService
     }
 }
-export const Config=Schema.object({
-    root: Schema.string().description('前端页面的根目录。').hidden(),
-    uiPath: Schema.string().description('前端页面呈现的路径。').default(''),
-    apiPath: Schema.string().description('后端 API 服务的路径。').default('/status'),
-    selfUrl: Schema.string().description('Zhin 服务暴露在公网的地址。').role('link').default(''),
-    open: Schema.boolean().description('在应用启动后自动在浏览器中打开控制台。'),
-    devMode: Schema.boolean().description('启用调试模式 (仅供开发者使用)。').hidden(),
-    cacheDir: Schema.string().description('调试服务器缓存目录。').default('.vite').hidden(),
-})
 export function install(ctx:Context){
-    let config:Console.Config=Config(useOptions('services.console'))
+    let config:Console.Config=ctx.useOptions('services.console',Schema.object({
+        root: Schema.string().description('前端页面的根目录。').hidden(),
+        uiPath: Schema.string().description('前端页面呈现的路径。').default(''),
+        apiPath: Schema.string().description('后端 API 服务的路径。').default('/status'),
+        selfUrl: Schema
+            .string()
+            .description('Zhin 服务暴露在公网的地址。')
+            .component('link')
+            .default('http://localhost:'+ctx.zhin.options.port),
+        devMode: Schema.boolean().description('启用调试模式 (仅供开发者使用)。').hidden().default(true),
+        cacheDir: Schema.string().description('调试服务器缓存目录。').default('.vite').hidden(),
+    }))
+    console.log(config)
     if(!config) config={}
     ctx.service('console',new Console(this,ctx,config))
 }

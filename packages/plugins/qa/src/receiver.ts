@@ -12,7 +12,7 @@ function hasEnv(envs:{type:string,target:string}[], type:string, target:string) 
             const [group_id, user_id='*']=target.split(':').filter(Boolean)
             const [env_group_id,env_user_id='*']=env.target.split(':')
             return env_group_id===group_id && (env_user_id==='*' || env_user_id===user_id)
-        }else if (env.type==='user'){
+        }else if (env.type==='user'||env.type==='private'){
             return env.target==='*' || env.target===target
         }
     })
@@ -28,6 +28,7 @@ export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bot
         session.group_id,
         session.user_id
     ].filter(Boolean).join(':')
+    const reg=/^(100|101|102|103|200|201|202|203|204|206|207|300|301|302|303|304|305|307|308|400|401|402|403|404|405|406|407|408|409|410|411|412|413|414|415|416|417|418|420|421|422|423|424|425|426|427|428|429|431|444|450|451|497|498|499|500|501|502|503|504|506|507|508|509|510|511|521|522|523|525|530|599)$/
     const dialogues = teaches.map(teach => teach.toJSON())
         .filter((teach) => hasEnv(teach.belongs, session.detail_type, target))
         .filter(teach => {
@@ -65,7 +66,7 @@ export async function triggerTeach(ctx: Context, session:NSession<keyof Zhin.Bot
                 dialogue.redirect = dialogue.redirect.replace(reg, args[index])
             }
         }
-        session.content = Element.stringify(dialogue.redirect)
+        session.content = dialogue.redirect.replace(/\$0/g,question)
         return triggerTeach(ctx, session)
     }
     if (dialogue.isReg) {

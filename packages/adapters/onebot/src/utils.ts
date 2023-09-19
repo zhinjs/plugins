@@ -10,10 +10,10 @@ export function toString(message: Types.Message): string {
     }).join('')
 }
 
-export function toElement<S>(message: Types.Message, ctx?: S): Element[] {
+export function toElement(message: Types.Message): Element[] {
     return [].concat(message).filter(Boolean).reduce((result: Element[], msg: Types.Segment | string) => {
         if (typeof msg === 'string') msg = {type: 'text', data: {text: msg}}
-        if (msg.type === 'text') result.push(...Element.parse((msg as Types.TextSegment).data.text || '', ctx))
+        if (msg.type === 'text') result.push(...Element.parse((msg as Types.TextSegment).data.text || ''))
         else if (['video', 'voice', 'audio', 'image'].includes(msg.type)) {
             result.push(Element(msg.type, {src: (msg as Types.ImageSegment).data.file_id, ...msg.data}))
         } else if (msg.type === 'mention_all') {

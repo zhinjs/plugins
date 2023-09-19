@@ -1,4 +1,3 @@
-import {Context} from "zhin";
 import {DataTypes} from 'sequelize'
 import {TableDecl} from "@zhinjs/plugin-database";
 import {Session} from "zhin";

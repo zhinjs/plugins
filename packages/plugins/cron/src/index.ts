@@ -114,8 +114,8 @@ export async function install(ctx: Context, config: Config = {}) {
                     schedules = schedules.filter((s) => isSameEnv(s.session, session))
                 }
                 if (!schedules.length) return '当前没有等待执行的日程。'
-                return h('text',{
-                    text:schedules.map(({id, time, interval, command, session}) => {
+                return h('text', {
+                    text: schedules.map(({id, time, interval, command, session}) => {
                         // 输出结果编码下，避免执行
                         let output = `${id}. ${Time.formatTimeInterval(time, interval)}：${command}`
                         if (options.full) output += `，上下文：${formatContext(session)}`

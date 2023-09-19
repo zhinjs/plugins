@@ -1,7 +1,9 @@
 import {Adapter, Zhin, AdapterOptions, Random} from "zhin";
 import {MockBot} from "./bot";
 import {Group} from "./group";
+import '@zhinjs/plugin-console'
 import {Friend, Member} from "./user";
+import path from "path";
 declare module 'zhin'{
     namespace Zhin{
         interface Adapters{
@@ -15,6 +17,15 @@ declare module 'zhin'{
 export class MockAdapter extends Adapter<'mock'>{
     constructor(zhin:Zhin,platform:'mock',options:AdapterOptions) {
         super(zhin,platform,options);
+    }
+    async start(){
+        for(const botOptions of this.options.bots){
+            this.startBot(botOptions)
+        }
+        this.zhin.console.addEntry({
+            dev:path.resolve(__dirname,'../client/index.ts'),
+            prod:path.resolve(__dirname,'../dist')
+        })
     }
     // 创个模拟群
     createGroup(bot_id:string,group_id=Random.id(8),group_name=group_id){

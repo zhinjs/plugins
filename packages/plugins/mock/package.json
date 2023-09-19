@@ -4,6 +4,9 @@
   "types": "lib/index.d.ts",
   "version": "0.0.11",
   "description": "mock adapter",
+  "scripts": {
+    "build": "zhin-client build"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",

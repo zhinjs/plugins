@@ -1,16 +1,16 @@
 {
-  "name": "@zhinjs/plugin-cron",
+  "name": "@zhinjs/plugin-persist",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "version": "0.0.15",
-  "description": "cron plugin",
+  "description": "persist plugin",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zhinjs/plugins.git",
-    "directory": "plugins/cron"
+    "directory": "plugins/persist"
   },
   "keywords": [
-    "cron",
+    "persist",
     "plugin",
     "zhin"
   ],

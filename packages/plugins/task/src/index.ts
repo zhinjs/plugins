@@ -1,4 +1,4 @@
-import {Context, Session, template, Element} from "zhin";
+import {Context, Session, template, Element, h} from "zhin";
 import {TaskStep, Task} from "./model";
 import '@zhinjs/plugin-database'
 import {Model} from "sequelize";
@@ -48,7 +48,7 @@ export function install(ctx: Context) {
                 pagination: Pagination = {pageNum: options.pageNum || 1, pageSize: 15}
             if (options.search) condition.name = options.search
             const result = await taskService.query(condition, pagination)
-            return template('task.list', result.map(task => template('task.info', task.id, task.name, task.desc)).join('\n'))
+            return h("text",{text:template('task.list', result.map(task => template('task.info', task.id, task.name, task.desc)).join('\n'))})
         })
     ctx.command('task/task.add')
         .desc('新增任务')
@@ -58,7 +58,7 @@ export function install(ctx: Context) {
             if (typeof result === 'string') return result
             return `添加任务(${result.id})成功`
         })
-    ctx.admins().command('task/task.edit [id:integer]')
+    ctx.command('task/task.edit [id:integer]')
         .desc('编辑任务')
         .alias('编辑任务')
         .action<Session>(async ({session}, id) => {
@@ -66,17 +66,17 @@ export function install(ctx: Context) {
             if (typeof result === 'string') return result
             return `编辑任务(${result.id})成功`
         })
-    ctx.admins().command('task/task.info [id:integer]')
+    ctx.command('task/task.info [id:integer]')
         .desc('查看任务详情')
         .sugar(/^查看任务(\d+)/, {args: ['$1']})
         .action(async ({session}, id) => {
             const task = await taskService.detail(id)
             if (!task) return `无效的任务id(${id})`
-            return template('task.info', task.id, task.name, task.desc) + template('task.steps', (task.steps || []).map(step => {
-                return template('task.step', step.index, step.template)
-            }).join('\n'))
+            return h('text',{text:template('task.info', task.id, task.name, task.desc) + template('task.steps', (task.steps || []).map(step => {
+                    return template('task.step', step.index, step.template)
+                }).join('\n'))})
         })
-    ctx.admins().command('task/task.run [id:integer]')
+    ctx.command('task/task.run [id:integer]')
         .desc('执行指定任务')
         .sugar(/^执行任务(\d+)/, {args: ['$1']})
         .action<Session>(async ({session}, id) => {

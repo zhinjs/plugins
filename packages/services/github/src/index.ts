@@ -1,7 +1,7 @@
-import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, useOptions, ChannelId} from "zhin";
+import {Session, Context, sanitize, Dict, h, Random, camelize, deepClone, ChannelId, Schema} from "zhin";
 import '@zhinjs/plugin-database'
 import {EventConfig, addListeners, defaultEvents, CommonPayload} from "./events";
-import {GitHub, Config, ReplyHandler} from "./serve";
+import {GitHub, ReplyHandler} from "./serve";
 import {encode} from "querystring";
 import {Method} from "axios";
 import {createHmac} from "crypto";
@@ -25,7 +25,16 @@ export async function install(ctx: Context) {
         const src = `https://opengraph.github.com/repo/${owner}/${repo}`
         session.reply(h('image', {src}))
     })
-    const config = Config(useOptions('services.github'))
+    const config = ctx.useOptions('services.github',Schema.object({
+        path: Schema.string().description('webhook路径').default('/github'),
+        appId: Schema.string().description('Github AppId').required(),
+        appSecret: Schema.string().description('Github AppSecret').required(),
+        messagePrefix: Schema.string().description('消息前缀'),
+        redirect: Schema.string().description('请求回调地址').default('/redirect'),
+        promptTimeout: Schema.number().description('会话超时时间').default(60000),
+        replyTimeout: Schema.number().description('回复超时时间').default(60000),
+        requestTimeout: Schema.number().description('请求超时时间').default(60000),
+    }))
     if (!config) return
     config.path = sanitize(config.path)
     const {database} = ctx

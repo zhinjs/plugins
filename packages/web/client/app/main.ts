@@ -25,6 +25,7 @@ router.afterEach((route) => {
 })
 
 const endpoint = new URL(config.endpoint, location.origin).toString()
+console.log(endpoint)
 connect(endpoint.replace(/^http/, 'ws')).then(()=>{
     console.log('已连接服务端')
 })

@@ -14,6 +14,12 @@ export class Group extends Sender{
     constructor(public bot:MockBot,public owner:string,public info:Group.Info) {
         super(bot);
     }
+    get group_id(){
+        return this.info.group_id
+    }
+    get group_name(){
+        return this.info.group_name
+    }
     sendMsg(message:Element.Fragment){
         return this.bot.sendMsg(this.info.group_id,'group',message)
     }

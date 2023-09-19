@@ -1,7 +1,6 @@
 import {Plugin, Dict, Context, noop} from 'zhin'
 import {dirname, extname, resolve} from 'path'
 import {createReadStream, existsSync, promises as fsp} from 'fs'
-import {createServer} from "vite";
 import {DataService} from './service'
 import {Console} from "./index";
 import {ViteDevServer} from 'vite'
@@ -25,10 +24,6 @@ class WebService extends DataService<string[]> {
         if (!this.root) return
         if (this.ctx.zhin.isDev) await this.createVite()
         this.serveAssets()
-        if (this.config.open) {
-            const {port = 8086} = this.ctx.zhin.options['http'] || {}
-            open(`http://localhost:${port}${this.config.uiPath}`)
-        }
         this.isStarted = true
     }
 

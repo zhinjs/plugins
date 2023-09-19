@@ -1,6 +1,6 @@
 import {ChatGPTAPI} from "chatgpt";
 import fetch from 'isomorphic-fetch'
-import { Element, Context, Schema} from 'zhin'
+import {Element, Context, Schema, Dict} from 'zhin'
 
 type Role = 'user' | 'assistant';
 declare module 'zhin' {
@@ -43,7 +43,7 @@ export class ChatGPTService {
     /** 消息队列 */
     messageQueue: string[];
 
-    constructor(public ctx:Context,private config:ReturnType<typeof ChatGPTService.Config>) {
+    constructor(public ctx:Context,private config:Dict) {
         if(!config.timeout) config.timeout=ctx.zhin.options.delay.timeout||=60*1000
         if(!config.api_key) {
             this.ctx.logger.warn('你没有添加 api key ，ChatGPT 服务将无法正常使用')
@@ -111,11 +111,4 @@ export class ChatGPTService {
     getMessageQueue(): string[] {
         return this.messageQueue;
     }
-}
-export namespace ChatGPTService{
-    export const Config=Schema.object({
-        api_key:Schema.string().required(true).description('chatGPT的key'),
-        proxy_url:Schema.string().description('代理地址'),
-        timeout:Schema.number().description('请求超时时间(单位：ms)')
-    })
 }

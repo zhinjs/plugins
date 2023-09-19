@@ -1,4 +1,4 @@
-import {Context, ChannelId, useOptions, Schema, NSession, Zhin} from 'zhin'
+import {Context, ChannelId, Schema, NSession, Zhin} from 'zhin'
 import RssFeedEmitter from 'rss-feed-emitter'
 import {Meta} from 'feedparser'
 import {Feed} from "./models";
@@ -12,14 +12,12 @@ export interface Config {
     userAgent?: string
 }
 
-export const Config = Schema.object({
-    timeout: Schema.number(),
-    refresh: Schema.number(),
-    userAgent: Schema.string()
-})
-
 export async function install(ctx: Context) {
-    const config = Config(useOptions('plugins.rss'))
+    const config = ctx.useOptions('plugins.rss',Schema.object({
+        timeout: Schema.number(),
+        refresh: Schema.number(),
+        userAgent: Schema.string()
+    }))
     ctx.disposes.push(
         await ctx.beforeReady(async () => {
             ctx.disposes.push(

@@ -1,14 +1,13 @@
-import {Context, Element,h, Schema, Session, useOptions} from "zhin";
+import {Context, Element,h, Schema, Session} from "zhin";
 import * as time from './time'
 import * as math from './math'
 import * as request from './request'
 export const name='utils'
-export const Config=Schema.object({
-    time:Schema.boolean(),
-    math:Schema.boolean()
-})
 export function install(ctx:Context){
-    let config:Utils.Config=useOptions('plugin.utils')
+    let config:Utils.Config=ctx.useOptions('plugin.utils',Schema.object({
+        time:Schema.boolean(),
+        math:Schema.boolean()
+    }))
     if(!config) config={}
     ctx.command('utils')
         .desc('公共工具')

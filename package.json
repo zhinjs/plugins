@@ -47,11 +47,12 @@
     "semver": "^7.3.7",
     "ts-node": "^10.9.1",
     "typescript": "^4.7.4",
-    "zhin": "^2.3.8"
+    "zhin": "^2.4.2"
   },
   "dependencies": {
     "icqq": "latest",
     "latest-version": "^5.1.0",
+    "sqlite3": "^5.1.6",
     "test": "*"
   }
 }

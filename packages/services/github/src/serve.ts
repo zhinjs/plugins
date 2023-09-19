@@ -157,17 +157,6 @@ export interface Config {
     requestTimeout?: number
 }
 
-export const Config = Schema.object({
-    path: Schema.string().description('webhook路径').default('/github'),
-    appId: Schema.string().description('Github AppId').required(true),
-    appSecret: Schema.string().description('Github AppSecret').required(true),
-    messagePrefix: Schema.string().description('消息前缀'),
-    redirect: Schema.string().description('请求回调地址').default('/redirect'),
-    promptTimeout: Schema.number().description('会话超时时间').default(60000),
-    replyTimeout: Schema.number().description('回复超时时间').default(60000),
-    requestTimeout: Schema.number().description('请求超时时间').default(60000),
-})
-
 export class ReplyHandler {
     constructor(public github: GitHub, public ctxEvent: Session, public content?: string) {
     }

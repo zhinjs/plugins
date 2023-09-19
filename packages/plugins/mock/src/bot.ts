@@ -1,5 +1,5 @@
 import {Server} from 'ws'
-import {Bot, BotOptions, Element, NSession, Random, Session, Zhin} from "zhin";
+import {Bot, BotOptions, Element, NSession, Random, Zhin} from "zhin";
 import {MockAdapter} from "./adapter";
 import {Group} from "./group";
 import {Friend, Member} from "./user";

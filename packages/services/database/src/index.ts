@@ -1,4 +1,4 @@
-import {Context, Dict, Dispose, omit, Schema, ToDispose, useOptions, Zhin} from "zhin";
+import {Context, Dict, Dispose, omit, Schema, ToDispose, Zhin} from "zhin";
 import {Sequelize, Model, Options, DataType, ModelStatic} from "sequelize";
 
 export * from 'sequelize'
@@ -42,32 +42,32 @@ declare module 'zhin' {
     }
 }
 export const name = 'database'
-export const Config = Schema.object({
-    dialect: Schema.union([
-        Schema.const('mysql'),
-        Schema.const('postgres'),
-        Schema.const('sqlite'),
-        Schema.const('mariadb'),
-        Schema.const('mssql'),
-        Schema.const('db2'),
-        Schema.const('snowflake'),
-    ]).description('数据库适配器').default('mysql'),
-    dialectModule: Schema.dict(Schema.any()).default(null),
-    dialectModulePath: Schema.string(),
-    dialectOptions: Schema.dict(Schema.any()).default(null),
-    storage: Schema.string(),
-    database: Schema.string().description('数据库名').default('zhin'),
-    username: Schema.string().description('用户名').default('root'),
-    password: Schema.string().description('密码'),
-    host: Schema.string().description('连接地址').default('localhost'),
-    port: Schema.number().description('端口').default(3306),
-    ssl: Schema.boolean().description('是否ssl'),
-    protocol: Schema.string().description('协议'),
-    timezone: Schema.string().description('时区')
-})
 
 export async function install(ctx: Context) {
-    const options = Config(useOptions('services.database'))
+    const options = ctx.useOptions('services.database',Schema.object({
+        dialect: Schema.union([
+            Schema.const('mysql'),
+            Schema.const('postgres'),
+            Schema.const('sqlite'),
+            Schema.const('mariadb'),
+            Schema.const('mssql'),
+            Schema.const('db2'),
+            Schema.const('snowflake'),
+        ] as const).description('数据库适配器').default('mysql'),
+        dialectModulePath: Schema.string(),
+        storage: Schema.string(),
+        database: Schema.string().description('数据库名').default('zhin'),
+        username: Schema.string().description('用户名').default('root'),
+        password: Schema.string().description('密码'),
+        host: Schema.string().description('连接地址').default('localhost'),
+        port: Schema.number().description('端口').default(3306),
+        ssl: Schema.boolean().description('是否ssl'),
+        protocol: Schema.string().description('协议'),
+        timezone: Schema.string().description('时区')
+    }))
+    Reflect.ownKeys(options).forEach(key => {
+        if (options[key] === undefined) delete options[key]
+    })
     ctx.service('database', Database, options as Options)
     ctx.disposes.push(
         await ctx.zhin.beforeReady(async ()=>{
