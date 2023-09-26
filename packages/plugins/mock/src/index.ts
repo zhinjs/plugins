@@ -1,13 +1,6 @@
-import {Context, Dict} from "zhin";
-import {DataService,Console} from "@zhinjs/plugin-console";
+import {Context} from "zhin";
 import path from "path";
-import {MockAdapter} from "./adapter";
 declare module 'zhin'{
-    namespace Zhin{
-        interface Adapters {
-            mock:MockAdapter
-        }
-    }
     interface EventMap{
         'mock/response'(nonce: string, data: any): void
     }
@@ -28,7 +21,6 @@ declare module '@zhinjs/plugin-console' {
     }
 }
 export function install(ctx:Context){
-    ctx.adapter(MockAdapter)
     ctx.console.addEntry({
         prod:path.resolve(__dirname,'../client/index.ts'),
         dev:path.resolve(__dirname,'../dist')

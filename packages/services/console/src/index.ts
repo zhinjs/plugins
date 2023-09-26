@@ -50,13 +50,16 @@ export class Console {
     addEntry(filename: string|WebService.Entry) {
         this.web.addEntry(filename)
     }
-
     addListener<K extends keyof Events>(event: K, callback: Events[K], options?: DataService.Options) {
         this.ws.addListener(event, { callback, ...options })
     }
+    registerMethod<K extends keyof Methods>(methodName: K, handler: Methods[K], options?: DataService.Options) {
+        this.ws.addListener(methodName, { callback:handler, ...options })
+    }
 }
-
-export interface Events {}
+export interface Methods {}
+export interface Events extends Methods{
+}
 
 export namespace Console {
     export interface Config {
@@ -76,17 +79,21 @@ export namespace Console {
 export function install(ctx:Context){
     let config:Console.Config=ctx.useOptions('services.console',Schema.object({
         root: Schema.string().description('前端页面的根目录。').hidden(),
-        uiPath: Schema.string().description('前端页面呈现的路径。').default(''),
-        apiPath: Schema.string().description('后端 API 服务的路径。').default('/status'),
+        uiPath: Schema.string().description('前端页面呈现的路径。'),
+        apiPath: Schema.string().description('后端 API 服务的路径。'),
         selfUrl: Schema
             .string()
             .description('Zhin 服务暴露在公网的地址。')
-            .component('link')
-            .default('http://localhost:'+ctx.zhin.options.port),
+            .component('link'),
+        open:Schema.boolean().description('是否自动打开浏览器。'),
         devMode: Schema.boolean().description('启用调试模式 (仅供开发者使用)。').hidden().default(true),
         cacheDir: Schema.string().description('调试服务器缓存目录。').default('.vite').hidden(),
+    }).default({
+        uiPath: '',
+        apiPath: '/status',
+        open: false,
+        selfUrl: '',
     }))
-    console.log(config)
     if(!config) config={}
     ctx.service('console',new Console(this,ctx,config))
 }

@@ -1,4 +1,4 @@
-import { ClientConfig, Console, DataService, Events } from '@zhinjs/plugin-console'
+import { ClientConfig, Console, DataService, Events,Methods } from '@zhinjs/plugin-console'
 import { reactive, ref } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 
@@ -43,7 +43,9 @@ export function send(type: string, ...args: any[]) {
         }, 60000)
     })
 }
-
+export function call<T extends keyof Methods>(method: T, ...args: Parameters<Methods[T]>) {
+    return send(method, ...args)
+}
 export function receive<T = any>(event: string, listener: (data: T) => void) {
     listeners[event] = listener
 }
