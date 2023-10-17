@@ -1,6 +1,6 @@
 <template>
   <div class="p-mock-page">
-    模拟页
+
   </div>
 </template>
 

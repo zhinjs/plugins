@@ -14,18 +14,33 @@ declare module 'zhin'{
         }
     }
 }
+declare module '@zhinjs/plugin-console' {
+    interface Events {
+        'mock/get_group_list'(): Promise<MockBot.GroupInfo[]>
+
+        'mock/get_group_info'(group_id: string): Promise<MockBot.GroupInfo>
+
+        'mock/get_group_member_list'(group_id: string): Promise<MockBot.GroupMember[]>
+
+        'mock/get_group_member_info'(group_id: string, user_id: string): Promise<MockBot.GroupMember>
+
+        'mock/get_friend_list'(): Promise<MockBot.FriendInfo[]>
+
+        'mock/get_friend_info'(user_id: string): Promise<MockBot.FriendInfo>
+    }
+}
 export class MockAdapter extends Adapter<'mock'>{
     constructor(zhin:Zhin,platform:'mock',options:AdapterOptions) {
         super(zhin,platform,options);
+        zhin.console.addEntry({
+            prod: path.resolve(__dirname, '../client/index.ts'),
+            dev: path.resolve(__dirname, '../dist')
+        })
     }
     async start(){
         for(const botOptions of this.options.bots){
             this.startBot(botOptions)
         }
-        this.zhin.console.addEntry({
-            dev:path.resolve(__dirname,'../client/index.ts'),
-            prod:path.resolve(__dirname,'../dist')
-        })
     }
     // 创个模拟群
     createGroup(bot_id:string,group_id=Random.id(8),group_name=group_id){
@@ -70,3 +85,4 @@ export class MockAdapter extends Adapter<'mock'>{
         return friend
     }
 }
+Adapter.define('mock', MockAdapter, MockBot)

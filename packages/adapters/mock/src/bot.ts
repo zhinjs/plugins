@@ -1,6 +1,6 @@
 import {Server} from 'ws'
-import {Bot, BotOptions, Element, NSession, Random, Zhin} from "zhin";
-import {MockAdapter} from "./adapter";
+import {Bot, BotOptions, Dict, Element, NSession, Random, Zhin} from "zhin";
+import {MockAdapter} from "./index";
 import {Group} from "./group";
 import {Friend, Member} from "./user";
 
@@ -20,7 +20,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     }
     constructor(zhin: Zhin, public adapter: MockAdapter, options: BotOptions) {
         super(zhin, adapter, options);
-        this.self_id = Random.id(10)
+        this.self_id = options.self_id+''
         this.internal = zhin.service('router').ws(`/mock/${this.self_id}`)
     }
     async getMsg(message_id:string){
@@ -51,11 +51,22 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     start(): any {
         this.internal.on('connection',(ws)=>{
             const group=this.adapter.createGroup(this.self_id)
-            const member=this.adapter.createMember(this.self_id,group.info.group_id)
             const friend=this.adapter.createFriend(this.self_id)
+            const member=this.adapter.createMember(this.self_id,group.info.group_id,friend.info.user_id)
             ws.on('message',(msg)=>{
-                const payload:{type:'group'|'private',message:string}=JSON.parse(msg.toString())
-                switch (payload.type){
+                const payload:Dict=JSON.parse(msg.toString())
+                const session=this.createSession('message.receive',{
+                    type:'message',
+                    message_id:Random.id(16),
+                    self_id:this.self_id,
+                    user_id:payload.user_id||friend.info.user_id,
+                    detail_type:payload.detail_type||payload.group_id?'group':'private',
+                    group_id:payload.group_id|| payload.detail_type==='group'?group.info.group_id:undefined,
+                    content:payload.content,
+                    time:payload.time||Date.now()
+                })
+                this.adapter.dispatch('message.receive',session)
+                switch (session.type){
                     case "private":
                         friend.history.push({
                             message_id:Random.id(16),
@@ -95,4 +106,19 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
         } as NSession<'mock'>;
     }
 
+}
+export namespace MockBot{
+    export interface GroupInfo{
+        group_id:string
+        group_name:string
+    }
+    export interface GroupMember{
+        group_id:string
+        user_id:string
+        title:string
+    }
+    export interface FriendInfo{
+        user_id:string
+        user_name:string
+    }
 }

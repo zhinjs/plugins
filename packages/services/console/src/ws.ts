@@ -42,7 +42,6 @@ class WsService extends DataService {
 
     constructor(public plugin:Plugin,ctx: Context, private config: WsService.Config) {
         super(ctx, 'ws')
-
         this.wsServer = ctx.router.ws(config.apiPath)
         this.wsServer.on('connection',this.onConnection)
     }
