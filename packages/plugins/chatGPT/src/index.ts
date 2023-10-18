@@ -32,8 +32,8 @@ ctx.command('咨询 <question:text>')
     return result
 })
 ctx.command('绘图 <prompt:text>')
-.action<Session>(async ({session:{user_id}},message)=>{
-    const result=await ctx.chatgpt.drawImage(user_id+'',message)
-    console.log(result)
-    return `<img src="${result}"/>`
+.action<Session>(async ({session},message)=>{
+    session.reply('等一下哦，在画了')
+    const result=await ctx.chatgpt.drawImage(session.user_id+'',message)
+    return `<image src="base64://${result}"/>`
 })

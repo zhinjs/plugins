@@ -44,7 +44,7 @@ export namespace Member{
     export interface Info extends User.Info{
         group_id:string
         group_name:string
-        title?:string
+        title:string
         card?:string
     }
 }

@@ -1,5 +1,5 @@
 import {Server} from 'ws'
-import {Bot, BotOptions, Dict, Element, NSession, Random, Zhin} from "zhin";
+import {Bot, BotOptions, Dict, Element, NSession, Random, Session, Zhin} from "zhin";
 import {MockAdapter} from "./index";
 import {Group} from "./group";
 import {Friend, Member} from "./user";
@@ -21,7 +21,6 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     constructor(zhin: Zhin, public adapter: MockAdapter, options: BotOptions) {
         super(zhin, adapter, options);
         this.self_id = options.self_id+''
-        this.internal = zhin.service('router').ws(`/mock/${this.self_id}`)
     }
     async getMsg(message_id:string){
         return this.history.find(m=>m.message_id===message_id)
@@ -32,6 +31,13 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     isOnline() {
         return true
     }
+    isGroupAdmin(session:Session){
+        return false
+    }
+    isGroupOwner(session: Session): boolean {
+        return false
+    }
+
 
     reply(session: NSession<'mock'>, message: Element.Fragment, quote?: boolean): Promise<any> {
         const target_id=session.detail_type==='group'?session.group_id:session.user_id
@@ -49,61 +55,52 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     }
 
     start(): any {
-        this.internal.on('connection',(ws)=>{
-            const group=this.adapter.createGroup(this.self_id)
-            const friend=this.adapter.createFriend(this.self_id)
-            const member=this.adapter.createMember(this.self_id,group.info.group_id,friend.info.user_id)
-            ws.on('message',(msg)=>{
-                const payload:Dict=JSON.parse(msg.toString())
-                const session=this.createSession('message.receive',{
-                    type:'message',
-                    message_id:Random.id(16),
-                    self_id:this.self_id,
-                    user_id:payload.user_id||friend.info.user_id,
-                    detail_type:payload.detail_type||payload.group_id?'group':'private',
-                    group_id:payload.group_id|| payload.detail_type==='group'?group.info.group_id:undefined,
-                    content:payload.content,
-                    time:payload.time||Date.now()
-                })
-                this.adapter.dispatch('message.receive',session)
-                switch (session.type){
-                    case "private":
-                        friend.history.push({
-                            message_id:Random.id(16),
-                            from_id:friend.info.user_id,
-                            user_id:member.info.user_id,
-                            to_id:this.self_id,
-                            type:payload.type,
-                            content:payload.message
-                        })
-                        break;
-                    case "group":
-                        group.history.push({
-                            message_id:Random.id(16),
-                            from_id:group.info.group_id,
-                            user_id:member.info.user_id,
-                            to_id:this.self_id,
-                            type:payload.type,
-                            content:payload.message
-                        })
-                        break;
-                    default:
-                        break;
+        const group=this.adapter.createGroup(this.self_id)
+        const friend=this.adapter.createFriend(this.self_id)
+        const member=this.adapter.createMember(this.self_id,group.info.group_id,friend.info.user_id)
+        this.on('mock/message_receive',msg=>{
+            const session=this.createSession('message.receive',{
+                type:'message',
+                message_id:Random.id(16),
+                self_id:this.self_id,
+                user_id:msg.user_id||friend.info.user_id,
+                detail_type:msg.detail_type||'private',
+                group_id:msg.group_id || msg.detail_type==='group'?group.info.group_id:undefined,
+                content:msg.content,
+                time:msg.time||Date.now()
+            })
+            this.adapter.emit('mock/message_receive',session)
+            this.adapter.emit('message.receive',this.self_id,session)
+            this.adapter.dispatch('message',session)
+            switch (session.type){
+                case "private":
+                    friend.history.push({
+                        message_id:Random.id(16),
+                        from_id:friend.info.user_id,
+                        user_id:member.info.user_id,
+                        to_id:this.self_id,
+                        type:msg.type,
+                        content:msg.message
+                    })
+                    break;
+                case "group":
+                    group.history.push({
+                        message_id:Random.id(16),
+                        from_id:group.info.group_id,
+                        user_id:member.info.user_id,
+                        to_id:this.self_id,
+                        type:msg.type,
+                        content:msg.message
+                    })
+                    break;
+                default:
+                    break;
 
-                }
-            })
-            ws.on('close',()=>{
-                group.ml.clear()
-                this.gl.delete(group.info.group_id)
-                this.fl.delete(friend.info.user_id)
-            })
+            }
         })
     }
     createSession(event: string, payload: Record<string, any>): NSession<"mock"> {
-        return {
-            event,
-            ...payload,
-        } as NSession<'mock'>;
+        return new Session(this.adapter,this.self_id,event, payload)
     }
 
 }
