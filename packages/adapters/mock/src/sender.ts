@@ -22,6 +22,7 @@ export class Sender{
             message_id:Random.id(16),
             [`${message.type==="private"?'user':message.type}_id`]:message.to_id,
             user_id:this.bot.self_id,
+            user_name:'Zhin',
             content:Sender.toHTML(Element.parse(Element.unescape(message.content))),
         })
         this.history.push(result)
@@ -36,7 +37,7 @@ export namespace Sender{
         for(const element of content){
             switch (element.type){
                 case 'text':
-                    result+=Element.unescape(element.attrs.text)
+                    result+=Element.escape(element.attrs.text)
                     break
                 case 'image':
                     result+=`<img src="data:image/png;base64,${element.attrs.src.replace('base64://','')}" alt="${element.attrs.text}">`
@@ -53,7 +54,7 @@ export namespace Sender{
                     result+=`<img src="https://maohaoji.com/zhindocimage/2${element.attrs.id}.png" alt="${element.attrs.text}">`;
                     break;
                 default:
-                    result+=Element.unescape(element.toString())
+                    result+=Element.escape(element.toString())
             }
         }
         return result

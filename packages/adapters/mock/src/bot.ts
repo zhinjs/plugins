@@ -9,6 +9,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     internal: Server;
     readonly gl: Map<string, Group> = new Map<string, Group>()
     readonly fl: Map<string, Friend> = new Map<string, Friend>()
+    readonly ul:Map<string,Friend>=new Map<string,Friend>()
     pickMember = Member.as.bind(this)
     pickFriend = Friend.as.bind(this)
     pickGroup = Group.as.bind(this)
@@ -64,8 +65,10 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
                 message_id:Random.id(16),
                 self_id:this.self_id,
                 user_id:msg.user_id||friend.info.user_id,
+                user_name:msg.user_id?this.ul.get(msg.user_id)?.info.user_name:friend.info.user_name,
                 detail_type:msg.detail_type||'private',
-                group_id:msg.group_id || msg.detail_type==='group'?group.info.group_id:undefined,
+                group_id:msg.detail_type==='group'?msg.group_id||group.info.group_id:undefined,
+                group_name:msg.detail_type==='group'?this.gl.get(msg.group_id||group.info.group_id)?.info.group_name:undefined,
                 content:msg.content,
                 time:msg.time||Date.now()
             })

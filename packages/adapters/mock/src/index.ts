@@ -153,6 +153,7 @@ export class MockAdapter extends Adapter<'mock'>{
         })
         //3. 绑定关联关系
         group.ml.set(member_id,member)
+        bot.ul.set(member_id,member)
         return member
     }
     // 模拟用户
@@ -163,6 +164,7 @@ export class MockAdapter extends Adapter<'mock'>{
         const friend=new Friend(bot,{user_id,user_name})
         //3. 绑定关联关系
         bot.fl.set(user_id,friend)
+        bot.ul.set(user_id,friend)
         return friend
     }
 }

@@ -1,13 +1,13 @@
 <template>
   <div class="p-mock-page">
     <el-select v-model="currentBot" placeholder="选择机器人" @change="initBot">
-      <el-option v-for="bot in bots" :key="bot.self_id" :label="bot.self_id" :value="bot.self_id"/>
+      <el-option v-for="bot in bots" :key="bot.self_id" :label="bot.user_name||'Zhin'" :value="bot.self_id"/>
     </el-select>
     <el-tabs v-if="bot" v-model="mock_user" >
       <el-tab-pane v-for="mock in mockList" :name="mock.user_id" :key="mock.user_id" :label="mock.user_name">
         <div class="chat-area-wrap">
           <chat-list :bot="bot" :mock_id="mock.user_id" @pick="handlePickTarget"></chat-list>
-          <chat-window v-if="target_id" :mock_id="mock.user_id" :messages="messages" :bot="bot" :target_id="target_id" :target_type="target_type"/>
+          <chat-window v-if="target_id" :mock_id="mock.user_id" :mocker_name="mock.user_name" :messages="messages" :bot="bot" :target_id="target_id" :target_type="target_type"/>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -49,6 +49,9 @@ receive('mock/message_receive',(event)=>{
 const mockList=computed(()=>{
   const bot=connectMap.value.get(currentBot.value)
   if(!bot) return []
+  if(!mock_user.value && bot.mockList.length>0){
+    mock_user.value=bot.mockList[0].user_id
+  }
   return bot.mockList
 })
 const friendList=computed(()=>{
@@ -79,6 +82,10 @@ const handlePickTarget=(ti,tt)=>{
 }
 onMounted(async ()=>{
   bots.value=await send('mock/bots')
+  if(bots.value.length>0){
+    currentBot.value=bots.value[0].self_id
+    initBot(currentBot.value)
+  }
 })
 </script>
 

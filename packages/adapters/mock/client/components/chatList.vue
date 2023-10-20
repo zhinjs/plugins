@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {Bot} from "../bot";
 import ChatItem from "./chatItem.vue";
-import {computed} from "vue";
+import {computed, watch} from "vue";
 
 const props = defineProps<{
   bot: Bot
@@ -12,6 +12,11 @@ const emits = defineEmits<{
 }>()
 const friendList=computed(()=>{
   return props.bot.friendList
+})
+watch(props.bot.friendList,()=>{
+  if(props.bot.friendList.value.length){
+    emits('pick',props.bot.friendList.value[0].user_id,'private')
+  }
 })
 const groupList=computed(()=>{
   return props.bot.groupList
