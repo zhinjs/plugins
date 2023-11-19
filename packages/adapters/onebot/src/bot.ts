@@ -94,8 +94,11 @@ export class OneBot extends Bot<
     isOnline() {
         return this.connect_status === 'connected'
     }
-    isGroupOwner(session){
+    isGroupCreator(session){
         return session.group?.owner_id===session.user_id
+    }
+    getGroupList(){
+        return this.callApi('get_group_list')
     }
     isGroupAdmin(session){
         return !!session.group?.admin_flag
@@ -115,7 +118,7 @@ export class OneBot extends Bot<
             type: obj.post_type || event,
             detail_type: obj.message_type || obj.request_type || obj.system_type || obj.notice_type || 'guild',
         }, {args})
-        if(obj.source){
+        if(obj.source&& typeof obj.source==="object"){
             obj.quote={
                 message_id:obj.source.message_id,
                 user_id:obj.source.user_id,
@@ -168,6 +171,9 @@ export class OneBot extends Bot<
             content: toString(result.message),
         }
     }
+    getSelfInfo(){
+        return this.runAction('get_self_info')
+    }
     getFriendList() {
         return this.runAction('get_friend_list')
     }
@@ -176,9 +182,6 @@ export class OneBot extends Bot<
         return this.runAction('get_friend_info', {user_id: friend_id})
     }
 
-    getGroupList() {
-        return this.runAction('get_group_list')
-    }
 
     getGroupInfo(group_id: string) {
         return this.runAction('get_group_info', {group_id})

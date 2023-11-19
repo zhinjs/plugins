@@ -164,7 +164,7 @@ export namespace Types {
         send_message(params: CanSendMessage): MessageRet
         get_msg(params:{message_id:string}):MessageBase
         delete_message(params: Pick<MessageRet, 'message_id'>): void
-
+        get_self_info(): UserInfo
         get_friend_list(): UserInfo[]
 
         get_friend_info(params: Pick<UserInfo, 'user_id'>): UserInfo

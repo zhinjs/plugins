@@ -200,12 +200,12 @@ class Database {
             const {user_id, user_name = ''} = session
             const [userInfo] = await this.models.User.findOrCreate({
                 where: {
-                    user_id: session.user_id
+                    user_id: session.user_id+''
                 },
                 defaults: {
                     authority: session.bot.isMaster(session) ? 7 : session.bot.isMaster(session) ? 4 : 1,
                     name: user_name,
-                    user_id,
+                    user_id:user_id+'',
                     ignore: false
                 }
             })

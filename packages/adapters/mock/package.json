@@ -2,7 +2,7 @@
   "name": "@zhinjs/adapter-mock",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "description": "mock adapter",
   "scripts": {
     "build": "zhin-client build"
@@ -22,7 +22,8 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.ttf",
-    "lib/**/LICENSE"
+    "lib/**/LICENSE",
+    "dist"
   ],
   "author": "凉菜 <admin@liucl.cn>",
   "license": "MIT",

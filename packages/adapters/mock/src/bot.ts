@@ -32,7 +32,7 @@ export class MockBot extends Bot<'mock', {}, {}, Server> {
     isOnline() {
         return true
     }
-    isGroupAdmin(session:Session){
+    isGroupCreator(session:Session){
         return false
     }
     isGroupOwner(session: Session): boolean {
